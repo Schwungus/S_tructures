@@ -39,6 +39,16 @@ StTinyBucket* StMapLookup(const StTinyMap* this, StTinyKey key);
 #define StFree free
 #endif
 
+#ifndef StMemset
+#include <string.h>
+#define StMemset memset
+#endif
+
+#ifndef StMemcpy
+#include <string.h>
+#define StMemcpy memcpy
+#endif
+
 #ifndef StLog
 #include <stdio.h>
 #define StLog(...)                                                                                                     \
@@ -89,13 +99,13 @@ static StTinyBucket* StNewTinyBucket(StTinyKey key, const void* data, int size) 
 
 	this->size = size;
 	this->data = StAlloc(this->size);
-	memcpy(this->data, data, this->size);
+	StMemcpy(this->data, data, this->size);
 	return this;
 }
 
 StTinyMap* StNewTinyMap() {
 	StTinyMap* this = StAlloc(sizeof(*this));
-	memset((void*)this->buckets, 0, sizeof(this->buckets));
+	StMemset((void*)this->buckets, 0, sizeof(this->buckets));
 	return this;
 }
 
@@ -135,7 +145,7 @@ void StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size) {
 
 edit:
 	if (bucket->size == size)
-		memcpy(bucket->data, data, size);
+		StMemcpy(bucket->data, data, size);
 	else
 		StLog("Your bucket doesn't store this much bruv\n");
 }

@@ -29,12 +29,14 @@ And you're ready to go! Just `#include "S_tructures.h"` in your code, and have f
 
 ## Customization
 
-In your `S_tructures.c`, you can customize the memory allocator by defining `StAlloc` and `StFree`. For example, to use memory allocation utilities provided by SDL3:
+In your `S_tructures.c`, you can customize the memory allocator by defining `StAlloc`, `StFree`, `StMemset`, and `StMemcpy`. For example, to use memory utilities provided by SDL3, you can define:
 
 ```c
 #include <SDL3/SDL_stdinc.h>
 #define StAlloc SDL_malloc
 #define StFree SDL_free
+#define StMemset SDL_memset
+#define StMemcpy SDL_memcpy
 
 #define S_TRUCTURES_IMPLEMENTATION
 #include "S_tructures.h"
