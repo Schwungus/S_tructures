@@ -75,6 +75,16 @@ StTinyBucket* StMapLookup(const StTinyMap* this, StTinyKey key);
 #define ST_MAKE_MAP_GET(suffix, type) type StMapGet##suffix(const StTinyMap* this, StTinyKey key)
 #endif
 
+void* StMapGet(const StTinyMap* this, StTinyKey key)
+#ifdef S_TRUCTURES_IMPLEMENTATION
+{
+	StTinyBucket* bucket = StMapLookup(this, key);
+	return bucket == NULL ? NULL : bucket->data;
+}
+#else
+	;
+#endif
+
 ST_MAKE_MAP_GET(I16, int16_t);
 ST_MAKE_MAP_GET(U16, uint16_t);
 ST_MAKE_MAP_GET(I32, int32_t);
