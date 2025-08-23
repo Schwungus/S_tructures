@@ -44,6 +44,12 @@ void testMaps() {
 	StMapNuke(map, 1337);
 	AssertEq(StMapGet(map, 1337), NULL);
 
+	StTinyMapIter iter = StMapIter(map);
+	int iterCount = 0;
+	while (StMapNext(&iter))
+		iterCount++;
+	AssertEq(iterCount, count);
+
 	FreeTinyMap(map);
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #define ST_TINY_MAP_CAPACITY (256)
@@ -16,6 +17,13 @@ typedef struct StTinyBucket {
 typedef struct StTinyMap {
 	StTinyBucket* buckets[ST_TINY_MAP_CAPACITY];
 } StTinyMap;
+
+/// Iterate over `StTinyMap` key-value pairs using `StMapIter()`.
+typedef struct StTinyMapIter {
+	StTinyMap* source;
+	StTinyBucket* at;
+	int64_t index;
+} StTinyMapIter;
 
 /// Map a string literal to a `StTinyKey`.
 StTinyKey StStrKey(const char* s);
@@ -34,6 +42,14 @@ StTinyBucket* StMapLookup(const StTinyMap* this, StTinyKey key);
 
 /// Free bucket & data associated with input key.
 void StMapNuke(StTinyMap* this, StTinyKey key);
+
+/// Create an iterator of key-value pairs inside the map.
+///
+/// Use `.at` for current entry. Use `StMapNext()` to go to the next.
+StTinyMapIter StMapIter(StTinyMap* this);
+
+/// Return `true` and set `.at` to the next entry if there is one. Return `false` and set `.at` to `NULL` otherwise.
+bool StMapNext(StTinyMapIter* iter);
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
 
@@ -226,6 +242,30 @@ void StMapNuke(StTinyMap* this, StTinyKey key) {
 		}
 		bucket = bucket->next;
 	}
+}
+
+StTinyMapIter StMapIter(StTinyMap* this) {
+	StTinyMapIter iter;
+	iter.source = this;
+	iter.index = -1;
+	iter.at = NULL;
+	return iter;
+}
+
+bool StMapNext(StTinyMapIter* iter) {
+	if (iter->source == NULL)
+		return false;
+	if (iter->index >= ST_TINY_MAP_CAPACITY)
+		return false;
+
+	if (iter->at != NULL)
+		iter->at = iter->at->next;
+	while (iter->at == NULL) {
+		if (++iter->index >= ST_TINY_MAP_CAPACITY)
+			return false;
+		iter->at = iter->source->buckets[iter->index];
+	}
+	return true;
 }
 
 #undef StKey2Idx
