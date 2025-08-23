@@ -18,6 +18,14 @@ static int counter = 1;
 		counter++;                                                                                             \
 	} while (0)
 
+static const int testCount = 8;
+static void testCleanup(void* ptr) {
+	if (ptr != NULL) {
+		int32_t data = *(int32_t*)ptr;
+		printf("%d ", data ^ testCount);
+	}
+}
+
 void testMaps() {
 	StTinyMap* map = NewTinyMap();
 
@@ -25,13 +33,13 @@ void testMaps() {
 	StMapPut(map, 1337, &data, sizeof(data));
 	AssertEq(StMapGetI32(map, 1337), 128);
 
-	const int count = 8;
-	for (int i = 0; i < count; i++) {
-		int32_t data = count ^ i;
-		StMapPut(map, i ^ count, &data, sizeof(data));
+	for (int i = 0; i < testCount; i++) {
+		int32_t data = testCount ^ i;
+		StMapPut(map, i ^ testCount, &data, sizeof(data));
+		StMapLookup(map, i ^ testCount)->cleanup = testCleanup;
 	}
-	for (int i = 0; i < count; i++)
-		AssertEq(StMapGetI32(map, i ^ count), count ^ i);
+	for (int i = 0; i < testCount; i++)
+		AssertEq(StMapGetI32(map, i ^ testCount), testCount ^ i);
 
 	data = 228;
 	StMapPut(map, StStrKey("Key1"), &data, sizeof(data));
@@ -48,9 +56,10 @@ void testMaps() {
 	int iterCount = 0;
 	while (StMapNext(&iter))
 		iterCount++;
-	AssertEq(iterCount, count);
+	AssertEq(iterCount, testCount);
 
 	FreeTinyMap(map);
+	printf("\n");
 }
 
 int main(int argc, char* argv[]) {

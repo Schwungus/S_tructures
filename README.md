@@ -52,3 +52,23 @@ In your `S_tructures.c`, you can customize the memory allocator by defining `StA
                 fflush(stdout);                                                                                        \
         } while (0)
 ```
+
+## Advanced Usage
+
+### `StTinyBucket` Cleanup Function
+
+You can set a custom function to call before deallocating data from a bucket. For example:
+
+```c
+static void CleanupTexture(void* ptr) {
+    if (ptr != NULL) UnloadTexture(*(Texture*)ptr);
+}
+
+StTinyMap* map = NewTinyMap();
+
+Texture tx = LoadTexture("...");
+StMapPut(map, StStrKey("MyTex"), tx, sizeof(tx));
+StMapLookup(map, StStrKey("MyTex"))->cleanup = CleanupTexture;
+
+FreeTinyMap(map); // `CleanupTexture` will be called for key `"MyTex"`.
+```

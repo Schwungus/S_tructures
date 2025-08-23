@@ -8,7 +8,7 @@ typedef uint64_t StTinyKey;
 
 typedef struct StTinyBucket {
 	StTinyKey key;
-	void* data;
+	void *data, (*cleanup)(void*);
 	struct StTinyBucket* next;
 	size_t size;
 } StTinyBucket;
@@ -123,6 +123,7 @@ static const StTinyKey StShuffleKey(const StTinyKey key) {
 
 static StTinyBucket* StNewTinyBucket(StTinyKey key, const void* data, int size) {
 	StTinyBucket* this = StAlloc(sizeof(*this));
+	this->cleanup = NULL;
 	this->next = NULL;
 	this->key = key;
 
@@ -156,18 +157,24 @@ StTinyMap* NewTinyMap() {
 	return this;
 }
 
-static void StFreeBucketForGood(StTinyBucket* this) {
+static void StNukeBucket(StTinyBucket* this) {
 	if (this == NULL)
 		return;
 	if (this->data != NULL) {
+		if (this->cleanup != NULL)
+			this->cleanup(this->data);
 		StFree(this->data);
 		this->data = NULL;
 	}
-	if (this->next != NULL) {
-		StFreeBucketForGood(this->next);
-		this->next = NULL;
-	}
+	this->next = NULL;
 	StFree(this);
+}
+
+static void StFreeBucketForGood(StTinyBucket* this) {
+	if (this != NULL) {
+		StFreeBucketForGood(this->next);
+		StNukeBucket(this);
+	}
 }
 
 void FreeTinyMap(StTinyMap* this) {
@@ -212,17 +219,6 @@ StTinyBucket* StMapLookup(const StTinyMap* this, StTinyKey key) {
 		bucket = bucket->next;
 	}
 	return NULL;
-}
-
-static void StNukeBucket(StTinyBucket* this) {
-	if (this == NULL)
-		return;
-	if (this->data != NULL) {
-		StFree(this->data);
-		this->data = NULL;
-	}
-	this->next = NULL;
-	StFree(this);
 }
 
 void StMapNuke(StTinyMap* this, StTinyKey key) {
