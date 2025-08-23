@@ -28,8 +28,13 @@ static void testCleanup(void* ptr) {
 
 void testMaps() {
 	StTinyMap* map = NewTinyMap();
-
 	int32_t data = 128;
+	StMapPut(map, 0, &data, sizeof(data));
+	AssertEq(StMapGetI32(map, 0), 128);
+	FreeTinyMap(map);
+
+	map = NewTinyMap();
+	data = 128;
 	StMapPut(map, 1337, &data, sizeof(data));
 	AssertEq(StMapGetI32(map, 1337), 128);
 
@@ -65,7 +70,7 @@ void testMaps() {
 int main(int argc, char* argv[]) {
 	testMaps();
 
-	printf("All good!\n");
+	printf("\nAll good!\n");
 	fflush(stdout);
 	return EXIT_SUCCESS;
 }
