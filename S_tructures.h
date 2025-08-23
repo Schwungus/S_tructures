@@ -17,6 +17,9 @@ typedef struct StTinyMap {
 	StTinyBucket* buckets[ST_TINY_MAP_CAPACITY];
 } StTinyMap;
 
+/// Map a string literal to a `StTinyKey`.
+StTinyKey StTinyStr(const char* s);
+
 StTinyMap* StNewTinyMap();
 
 void StFreeTinyMap(StTinyMap* this);
@@ -103,6 +106,17 @@ static StTinyBucket* StNewTinyBucket(StTinyKey key, const void* data, int size) 
 	this->data = StAlloc(this->size);
 	StMemcpy(this->data, data, this->size);
 	return this;
+}
+
+StTinyKey StTinyStr(const char* s) {
+	static char buf[8] = {0};
+	for (int i = 0; i < 8; i++)
+		if (s[i] == '\0') {
+			StMemcpy(buf, s, i);
+			StMemset(&buf[i], 0xFF, 8 - i);
+			return *(StTinyKey*)buf;
+		}
+	return *(StTinyKey*)s;
 }
 
 StTinyMap* StNewTinyMap() {

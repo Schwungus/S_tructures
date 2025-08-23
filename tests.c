@@ -32,6 +32,10 @@ void testMaps() {
 	for (int i = 0; i < count; i++)
 		AssertEq(StMapGetI32(map, i ^ count), count ^ i);
 
+	data = 228;
+	StMapPut(map, StTinyStr("Key1"), &data, sizeof(data));
+	AssertEq(StMapGetI32(map, StTinyStr("Key1")), 228);
+
 	StFreeTinyMap(map);
 }
 
