@@ -1,0 +1,11 @@
+Checks: |
+  clang-diagnostic-*,
+  clang-analyzer-*,
+  bugprone-*,
+  -bugprone-narrowing-conversions,
+  -bugprone-assignment-in-if-condition,
+  -bugprone-suspicious-string-compare,
+  -bugprone-reserved-identifier,
+  performance-*,
+  -performance-no-int-to-ptr,
+  portability-*
