@@ -19,7 +19,8 @@ static int counter = 1;
 	} while (0)
 
 void testMaps() {
-	StTinyMap* map = StNewTinyMap();
+	StTinyMap* map = NewTinyMap();
+
 	int32_t data = 128;
 	StMapPut(map, 1337, &data, sizeof(data));
 	AssertEq(StMapGetI32(map, 1337), 128);
@@ -33,10 +34,17 @@ void testMaps() {
 		AssertEq(StMapGetI32(map, i ^ count), count ^ i);
 
 	data = 228;
-	StMapPut(map, StTinyStr("Key1"), &data, sizeof(data));
-	AssertEq(StMapGetI32(map, StTinyStr("Key1")), 228);
+	StMapPut(map, StStrKey("Key1"), &data, sizeof(data));
+	AssertEq(StMapGetI32(map, StStrKey("Key1")), 228);
 
-	StFreeTinyMap(map);
+	StMapNuke(map, StStrKey("Key1"));
+	AssertEq(StMapGet(map, StStrKey("Key1")), NULL);
+
+	AssertEq(StMapGetI32(map, 1337), 128);
+	StMapNuke(map, 1337);
+	AssertEq(StMapGet(map, 1337), NULL);
+
+	FreeTinyMap(map);
 }
 
 int main(int argc, char* argv[]) {

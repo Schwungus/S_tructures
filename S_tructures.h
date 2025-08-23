@@ -18,17 +18,22 @@ typedef struct StTinyMap {
 } StTinyMap;
 
 /// Map a string literal to a `StTinyKey`.
-StTinyKey StTinyStr(const char* s);
+StTinyKey StStrKey(const char* s);
 
-StTinyMap* StNewTinyMap();
+/// Create a new `StTinyMap`. Make sure to call `FreeTinyMap` afterwards.
+StTinyMap* NewTinyMap();
 
-void StFreeTinyMap(StTinyMap* this);
+/// Cleanup a `StTinyMap`.
+void FreeTinyMap(StTinyMap* this);
 
 /// Insert data into the tinymap. Allocates a chunk of memory and copies data from input.
 void StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size);
 
 /// Returns the bucket with specified key, or `NULL` if there is none.
 StTinyBucket* StMapLookup(const StTinyMap* this, StTinyKey key);
+
+/// Free bucket & data associated with input key.
+void StMapNuke(StTinyMap* this, StTinyKey key);
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
 
@@ -61,8 +66,6 @@ StTinyBucket* StMapLookup(const StTinyMap* this, StTinyKey key);
 	} while (0)
 #endif
 
-#include <string.h>
-
 #endif
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
@@ -72,7 +75,7 @@ StTinyBucket* StMapLookup(const StTinyMap* this, StTinyKey key);
 		return bucket == NULL ? 0 : *(type*)bucket->data;                                                      \
 	}
 #else
-#define ST_MAKE_MAP_GET(suffix, type) type StMapGet##suffix(const StTinyMap* this, StTinyKey key)
+#define ST_MAKE_MAP_GET(suffix, type) type StMapGet##suffix(const StTinyMap*, StTinyKey)
 #endif
 
 void* StMapGet(const StTinyMap* this, StTinyKey key)
@@ -96,6 +99,8 @@ ST_MAKE_MAP_GET(U64, uint64_t);
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
 
+#define StKey2Idx(key) ((ST_TINY_MAP_CAPACITY - 1) & StShuffleKey(key))
+
 static const StTinyKey StShuffleKey(const StTinyKey key) {
 	return key ^ (key >> 32);
 }
@@ -118,7 +123,7 @@ static StTinyBucket* StNewTinyBucket(StTinyKey key, const void* data, int size) 
 	return this;
 }
 
-StTinyKey StTinyStr(const char* s) {
+StTinyKey StStrKey(const char* s) {
 	static char buf[8] = {0};
 	for (int i = 0; i < 8; i++)
 		if (s[i] == '\0') {
@@ -129,29 +134,36 @@ StTinyKey StTinyStr(const char* s) {
 	return *(StTinyKey*)s;
 }
 
-StTinyMap* StNewTinyMap() {
+StTinyMap* NewTinyMap() {
 	StTinyMap* this = StAlloc(sizeof(*this));
 	StMemset((void*)this->buckets, 0, sizeof(this->buckets));
 	return this;
 }
 
-static void StFreeBucket(StTinyBucket* this) {
+static void StFreeBucketForGood(StTinyBucket* this) {
 	if (this == NULL)
 		return;
-	if (this->data != NULL)
+	if (this->data != NULL) {
 		StFree(this->data);
-	StFreeBucket(this->next);
+		this->data = NULL;
+	}
+	if (this->next != NULL) {
+		StFreeBucketForGood(this->next);
+		this->next = NULL;
+	}
 	StFree(this);
 }
 
-void StFreeTinyMap(StTinyMap* this) {
+void FreeTinyMap(StTinyMap* this) {
+	if (this == NULL)
+		return;
 	for (int i = 0; i < ST_TINY_MAP_CAPACITY; i++)
-		StFreeBucket(this->buckets[i]);
+		StFreeBucketForGood(this->buckets[i]);
 	StFree(this);
 }
 
 void StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size) {
-	int idx = (ST_TINY_MAP_CAPACITY - 1) & StShuffleKey(key);
+	int idx = StKey2Idx(key);
 	if (this->buckets[idx] == NULL) {
 		this->buckets[idx] = StNewTinyBucket(key, data, size);
 		return;
@@ -177,8 +189,7 @@ edit:
 }
 
 StTinyBucket* StMapLookup(const StTinyMap* this, StTinyKey key) {
-	const size_t idx = (ST_TINY_MAP_CAPACITY - 1) & StShuffleKey(key);
-	StTinyBucket* bucket = this->buckets[idx];
+	StTinyBucket* bucket = this->buckets[StKey2Idx(key)];
 	while (bucket != NULL) {
 		if (bucket->key == key)
 			return bucket;
@@ -186,5 +197,37 @@ StTinyBucket* StMapLookup(const StTinyMap* this, StTinyKey key) {
 	}
 	return NULL;
 }
+
+static void StNukeBucket(StTinyBucket* this) {
+	if (this == NULL)
+		return;
+	if (this->data != NULL) {
+		StFree(this->data);
+		this->data = NULL;
+	}
+	this->next = NULL;
+	StFree(this);
+}
+
+void StMapNuke(StTinyMap* this, StTinyKey key) {
+	StTinyBucket* bucket = this->buckets[StKey2Idx(key)];
+	if (bucket == NULL)
+		return;
+	if (bucket->key == key) {
+		this->buckets[StKey2Idx(key)] = bucket->next;
+		StNukeBucket(bucket);
+		return;
+	}
+	while (bucket->next != NULL) {
+		if (bucket->next->key == key) {
+			bucket->next = bucket->next->next;
+			StNukeBucket(bucket->next);
+			return;
+		}
+		bucket = bucket->next;
+	}
+}
+
+#undef StKey2Idx
 
 #endif
