@@ -22,7 +22,7 @@ Then add a `S_tructures.c` file with the library's implementation details:
 
 ```c
 #define S_TRUCTURES_IMPLEMENTATION
-#include "S_tructures.h"
+#include "S_tructures.h" // IWYU pragma: keep
 ```
 
 And you're ready to go! Just `#include "S_tructures.h"` in your code, and have fun using these crutches. Look into [our testbed](tests.c) to see them in action.
@@ -39,7 +39,7 @@ In your `S_tructures.c`, you can customize the memory allocator by defining `StA
 #define StMemcpy SDL_memcpy
 
 #define S_TRUCTURES_IMPLEMENTATION
-#include "S_tructures.h"
+#include "S_tructures.h" // IWYU pragma: keep
 ```
 
 `StLog` is called when spitting useful error messages, and can be customized as well. Here's how it's defined by default:
