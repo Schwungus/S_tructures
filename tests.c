@@ -41,7 +41,7 @@ void testMaps() {
 	for (int i = 0; i < testCount; i++) {
 		int32_t data = testCount ^ i;
 		StMapPut(map, i ^ testCount, &data, sizeof(data));
-		StMapLookup(map, i ^ testCount)->cleanup = testCleanup;
+		StMapFind(map, i ^ testCount)->cleanup = testCleanup;
 	}
 	for (int i = 0; i < testCount; i++)
 		AssertEq(StMapGetI32(map, i ^ testCount), testCount ^ i);

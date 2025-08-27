@@ -37,8 +37,8 @@ void FreeTinyMap(StTinyMap* this);
 /// Insert data into the tinymap. Allocates a chunk of memory and copies data from input.
 void StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size);
 
-/// Returns the bucket with specified key, or `NULL` if there is none.
-StTinyBucket* StMapLookup(const StTinyMap* this, StTinyKey key);
+/// Find the bucket by input key, or return `NULL` if there is none.
+StTinyBucket* StMapFind(const StTinyMap* this, StTinyKey key);
 
 /// Free bucket & data associated with input key.
 void StMapNuke(StTinyMap* this, StTinyKey key);
@@ -77,17 +77,27 @@ bool StMapNext(StTinyMapIter* iter);
 #include <stdio.h>
 #define StLog(...)                                                                                                     \
 	do {                                                                                                           \
-		fprintf(stdout, __VA_ARGS__);                                                                          \
+		fprintf(stdout, "[S_tr]: " __VA_ARGS__);                                                               \
 		fflush(stdout);                                                                                        \
 	} while (0)
 #endif
+
+#define StOutOfJuice() StLog("Out of memory!!!\n")
+#define StCheckedAlloc(var, size)                                                                                      \
+	do {                                                                                                           \
+		(var) = StAlloc((size));                                                                               \
+		if ((var) == NULL) {                                                                                   \
+			StOutOfJuice();                                                                                \
+			return NULL;                                                                                   \
+		}                                                                                                      \
+	} while (0)
 
 #endif
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
 #define ST_MAKE_MAP_GET(suffix, type)                                                                                  \
 	type StMapGet##suffix(const StTinyMap* this, StTinyKey key) {                                                  \
-		StTinyBucket* bucket = StMapLookup(this, key);                                                         \
+		StTinyBucket* bucket = StMapFind(this, key);                                                           \
 		return bucket == NULL ? 0 : *(type*)bucket->data;                                                      \
 	}
 #else
@@ -97,7 +107,7 @@ bool StMapNext(StTinyMapIter* iter);
 void* StMapGet(const StTinyMap* this, StTinyKey key)
 #ifdef S_TRUCTURES_IMPLEMENTATION
 {
-	StTinyBucket* bucket = StMapLookup(this, key);
+	StTinyBucket* bucket = StMapFind(this, key);
 	return bucket == NULL ? NULL : bucket->data;
 }
 #else
@@ -116,43 +126,43 @@ ST_MAKE_MAP_GET(U64, uint64_t);
 #ifdef S_TRUCTURES_IMPLEMENTATION
 
 #define StKey2Idx(key) ((ST_TINY_MAP_CAPACITY - 1) & StShuffleKey(key))
-
 static const StTinyKey StShuffleKey(const StTinyKey key) {
-	return key ^ (key >> 32);
+	return key ^ (key >> (4 * sizeof(key)));
 }
 
 static StTinyBucket* StNewTinyBucket(StTinyKey key, const void* data, int size) {
-	StTinyBucket* this = StAlloc(sizeof(*this));
+	if (size < 1) { // TODO: bar behind a debug build check?
+		StLog("Requested bucket size 0; catching on fire\n");
+		return NULL;
+	}
+
+	StTinyBucket* this = NULL;
+	StCheckedAlloc(this, sizeof(*this));
 	this->cleanup = NULL;
 	this->next = NULL;
 	this->key = key;
 
-	if (size < 1) { // TODO: bar behind a debug build check?
-		StLog("Requested bucket size 0; catching on fire\n");
-		this->size = 0;
-		this->data = NULL;
-		return this;
-	}
-
 	this->size = size;
-	this->data = StAlloc(this->size);
+	this->data = NULL;
+	StCheckedAlloc(this->data, this->size);
 	StMemcpy(this->data, data, this->size);
 	return this;
 }
 
 StTinyKey StStrKey(const char* s) {
-	static char buf[8] = {0};
-	for (int i = 0; i < 8; i++)
+	static char buf[sizeof(StTinyKey)] = {0};
+	for (int i = 0; i < sizeof(buf); i++)
 		if (s[i] == '\0') {
 			StMemcpy(buf, s, i);
-			StMemset(&buf[i], 0xFF, 8 - i);
+			StMemset(buf + i, 0xFF, sizeof(buf) - i);
 			return *(StTinyKey*)buf;
 		}
 	return *(StTinyKey*)s;
 }
 
 StTinyMap* NewTinyMap() {
-	StTinyMap* this = StAlloc(sizeof(*this));
+	StTinyMap* this = NULL;
+	StCheckedAlloc(this, sizeof(*this));
 	StMemset((void*)this->buckets, 0, sizeof(this->buckets));
 	return this;
 }
@@ -211,7 +221,7 @@ edit:
 		StLog("Your bucket doesn't store this much bruv\n");
 }
 
-StTinyBucket* StMapLookup(const StTinyMap* this, StTinyKey key) {
+StTinyBucket* StMapFind(const StTinyMap* this, StTinyKey key) {
 	StTinyBucket* bucket = this->buckets[StKey2Idx(key)];
 	while (bucket != NULL) {
 		if (bucket->key == key)
@@ -222,11 +232,12 @@ StTinyBucket* StMapLookup(const StTinyMap* this, StTinyKey key) {
 }
 
 void StMapNuke(StTinyMap* this, StTinyKey key) {
-	StTinyBucket* bucket = this->buckets[StKey2Idx(key)];
+	int idx = StKey2Idx(key);
+	StTinyBucket* bucket = this->buckets[idx];
 	if (bucket == NULL)
 		return;
 	if (bucket->key == key) {
-		this->buckets[StKey2Idx(key)] = bucket->next;
+		this->buckets[idx] = bucket->next;
 		StNukeBucket(bucket);
 		return;
 	}
