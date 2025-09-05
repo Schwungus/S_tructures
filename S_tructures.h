@@ -80,11 +80,12 @@ bool StMapNext(StTinyMapIter* iter);
 #define StLog(...)                                                                                                     \
 	do {                                                                                                           \
 		fprintf(stdout, "[S_tr]: " __VA_ARGS__);                                                               \
+		fprintf(stdout, "\n");                                                                                 \
 		fflush(stdout);                                                                                        \
 	} while (0)
 #endif
 
-#define StOutOfJuice() StLog("Out of memory!!!\n")
+#define StOutOfJuice() StLog("Out of memory!!!")
 #define StCheckedAlloc(var, size)                                                                                      \
 	do {                                                                                                           \
 		(var) = StAlloc((size));                                                                               \
@@ -134,7 +135,7 @@ static const StTinyKey StShuffleKey(const StTinyKey key) {
 
 static StTinyBucket* StNewTinyBucket(StTinyKey key, const void* data, int size) {
 	if (size < 1) { // TODO: bar behind a debug build check?
-		StLog("Requested bucket size 0; catching on fire\n");
+		StLog("Requested bucket size 0; catching on fire");
 		return NULL;
 	}
 
@@ -220,7 +221,7 @@ edit:
 	if (bucket->size == size)
 		StMemcpy(bucket->data, data, size);
 	else
-		StLog("Your bucket doesn't store this much bruv\n");
+		StLog("Your bucket doesn't store this much bruv");
 	return bucket;
 }
 
