@@ -70,7 +70,7 @@ void testMaps() {
 int main(int argc, char* argv[]) {
 	testMaps();
 
-	printf("\nAll good!\n");
+	printf("All good!\n");
 	fflush(stdout);
 	return EXIT_SUCCESS;
 }
