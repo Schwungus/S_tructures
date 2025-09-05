@@ -67,8 +67,8 @@ static void CleanupTexture(void* ptr) {
 StTinyMap* map = NewTinyMap();
 
 Texture tx = LoadTexture("...");
-StMapPut(map, StStrKey("MyTex"), tx, sizeof(tx));
-StMapLookup(map, StStrKey("MyTex"))->cleanup = CleanupTexture;
+StTinyBucket* bucket = StMapPut(map, StStrKey("MyTex"), tx, sizeof(tx));
+bucket->cleanup = CleanupTexture;
 
 FreeTinyMap(map); // `CleanupTexture` will be called for key `"MyTex"`.
 ```

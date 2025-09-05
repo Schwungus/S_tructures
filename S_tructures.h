@@ -35,7 +35,9 @@ StTinyMap* NewTinyMap();
 void FreeTinyMap(StTinyMap* this);
 
 /// Insert data into the tinymap. Allocates a chunk of memory and copies data from input.
-void StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size);
+///
+/// Also returns the resulting bucket in case you need to set the cleanup function.
+StTinyBucket* StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size);
 
 /// Find the bucket by input key, or return `NULL` if there is none.
 StTinyBucket* StMapFind(const StTinyMap* this, StTinyKey key);
@@ -195,11 +197,11 @@ void FreeTinyMap(StTinyMap* this) {
 	StFree(this);
 }
 
-void StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size) {
+StTinyBucket* StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size) {
 	int idx = StKey2Idx(key);
 	if (this->buckets[idx] == NULL) {
 		this->buckets[idx] = StNewTinyBucket(key, data, size);
-		return;
+		return this->buckets[idx];
 	}
 
 	StTinyBucket* bucket = this->buckets[idx];
@@ -212,13 +214,14 @@ void StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size) {
 	}
 
 	bucket->next = StNewTinyBucket(key, data, size);
-	return;
+	return bucket->next;
 
 edit:
 	if (bucket->size == size)
 		StMemcpy(bucket->data, data, size);
 	else
 		StLog("Your bucket doesn't store this much bruv\n");
+	return bucket;
 }
 
 StTinyBucket* StMapFind(const StTinyMap* this, StTinyKey key) {
