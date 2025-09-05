@@ -46,11 +46,12 @@ In your `S_tructures.c`, you can customize the memory allocator by defining `StA
 
 ```c
 #include <stdio.h>
-#define StLog(...)                                                                                                     \
-        do {                                                                                                           \
-                fprintf(stdout, __VA_ARGS__);                                                                          \
-                fflush(stdout);                                                                                        \
-        } while (0)
+#define StLog(...)                               \
+    do {                                         \
+        fprintf(stdout, "[S_tr]: " __VA_ARGS__); \
+        fprintf(stdout, "\n");                   \
+        fflush(stdout);                          \
+    } while (0)
 ```
 
 ## Advanced Usage
