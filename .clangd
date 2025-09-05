@@ -1,4 +1,4 @@
 If:
-  PathMatch: S_tructures\.h
+  PathMatch: include/S_tructures\.h
 CompileFlags:
   Add: [-DS_TRUCTURES_IMPLEMENTATION]
