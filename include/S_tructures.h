@@ -155,7 +155,7 @@ static StTinyBucket* StNewTinyBucket(StTinyKey key, const void* data, int size) 
 StTinyKey StStrKey(const char* s) {
 	static char buf[sizeof(StTinyKey)] = {0};
 	for (int i = 0; i < sizeof(buf); i++)
-		if (s[i] == '\0') {
+		if (!s[i]) {
 			StMemcpy(buf, s, i);
 			StMemset(buf + i, 0xFF, sizeof(buf) - i);
 			return *(StTinyKey*)buf;
