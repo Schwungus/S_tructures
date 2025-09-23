@@ -1,6 +1,6 @@
 # S_tructures
 
-Useful premade datastructures for us plain-C rawdoggers.
+Useful dynamic datastructures for us plain-C rawdoggers.
 
 ## Usage
 
@@ -25,7 +25,7 @@ Then add a `S_tructures.c` file with the library's implementation details:
 #include "S_tructures.h" // IWYU pragma: keep
 ```
 
-And you're ready to go! Just `#include "S_tructures.h"` in your code, and have fun using these crutches. Look into [our testbed](tests.c) to see them in action.
+And you're ready to go! Just `#include "S_tructures.h"` in your code, and have fun using these crutches. Look into [our testbed](src/tests.c) to see them in action.
 
 ## Customization
 
