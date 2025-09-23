@@ -170,9 +170,7 @@ StTinyMap* NewTinyMap() {
 	return this;
 }
 
-static void StNukeBucket(StTinyBucket* this) {
-	if (this == NULL)
-		return;
+static void FreeSingleBucket(StTinyBucket* this) {
 	if (this->data != NULL) {
 		if (this->cleanup != NULL)
 			this->cleanup(this->data);
@@ -183,10 +181,10 @@ static void StNukeBucket(StTinyBucket* this) {
 	StFree(this);
 }
 
-static void StFreeBucketForGood(StTinyBucket* this) {
+static void FreeBucketChain(StTinyBucket* this) {
 	if (this != NULL) {
-		StFreeBucketForGood(this->next);
-		StNukeBucket(this);
+		FreeBucketChain(this->next);
+		FreeSingleBucket(this);
 	}
 }
 
@@ -194,7 +192,7 @@ void FreeTinyMap(StTinyMap* this) {
 	if (this == NULL)
 		return;
 	for (int i = 0; i < ST_TINY_MAP_CAPACITY; i++)
-		StFreeBucketForGood(this->buckets[i]);
+		FreeBucketChain(this->buckets[i]);
 	StFree(this);
 }
 
@@ -242,13 +240,13 @@ void StMapNuke(StTinyMap* this, StTinyKey key) {
 		return;
 	if (bucket->key == key) {
 		this->buckets[idx] = bucket->next;
-		StNukeBucket(bucket);
+		FreeSingleBucket(bucket);
 		return;
 	}
 	while (bucket->next != NULL) {
 		if (bucket->next->key == key) {
 			bucket->next = bucket->next->next;
-			StNukeBucket(bucket->next);
+			FreeSingleBucket(bucket->next);
 			return;
 		}
 		bucket = bucket->next;

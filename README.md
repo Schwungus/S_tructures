@@ -62,8 +62,8 @@ You can set a custom cleanup function to call before deallocating data from a bu
 
 ```c
 static void CleanupTexture(void* ptr) {
-    if (ptr != NULL)
-        UnloadTexture(*(Texture*)ptr);
+    // Pointer-cast & dereference since the function takes a value of type `Texture`:
+    UnloadTexture(*(Texture*)ptr);
 }
 
 StTinyMap* map = NewTinyMap();

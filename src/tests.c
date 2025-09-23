@@ -20,10 +20,8 @@ static int counter = 1;
 
 static const int testCount = 8;
 static void testCleanup(void* ptr) {
-	if (ptr != NULL) {
-		int32_t data = *(int32_t*)ptr;
-		printf("%d ", data ^ testCount);
-	}
+	int32_t data = *(int32_t*)ptr;
+	printf("%d ", data ^ testCount);
 }
 
 void testMaps() {
