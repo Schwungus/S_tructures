@@ -1,6 +1,6 @@
 # S_tructures
 
-Useful dynamic datastructures for us plain-C rawdoggers.
+Useful dynamic data structures for plain C. Currently only implements hashmaps.
 
 ## Usage
 
