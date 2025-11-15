@@ -25,8 +25,11 @@ typedef struct StTinyMapIter {
 	int64_t index;
 } StTinyMapIter;
 
-/// Map a string literal to a `StTinyKey`.
-StTinyKey StStrKey(const char* s);
+/// Map up to 8 bytes of a character string to a `StTinyKey`.
+StTinyKey StStrKey(const char* restrict s);
+
+/// Hash a string of arbitrary length to use that as an `StTinyMap` key.
+StTinyKey StHashStr(const char* restrict s);
 
 /// Create a new `StTinyMap`. Make sure to call `FreeTinyMap` afterwards.
 StTinyMap* NewTinyMap();
@@ -89,7 +92,7 @@ bool StMapNext(StTinyMapIter* iter);
 #define StCheckedAlloc(var, size)                                                                                      \
 	do {                                                                                                           \
 		(var) = StAlloc((size));                                                                               \
-		if ((var) == NULL) {                                                                                   \
+		if (!(var)) {                                                                                          \
 			StOutOfJuice();                                                                                \
 			return NULL;                                                                                   \
 		}                                                                                                      \
@@ -101,7 +104,7 @@ bool StMapNext(StTinyMapIter* iter);
 #define ST_MAKE_MAP_GET(suffix, type)                                                                                  \
 	type StMapGet##suffix(const StTinyMap* this, StTinyKey key) {                                                  \
 		StTinyBucket* bucket = StMapFind(this, key);                                                           \
-		return bucket == NULL ? 0 : *(type*)bucket->data;                                                      \
+		return bucket ? *(type*)bucket->data : 0;                                                              \
 	}
 #else
 #define ST_MAKE_MAP_GET(suffix, type) type StMapGet##suffix(const StTinyMap*, StTinyKey)
@@ -111,7 +114,7 @@ void* StMapGet(const StTinyMap* this, StTinyKey key)
 #ifdef S_TRUCTURES_IMPLEMENTATION
 {
 	StTinyBucket* bucket = StMapFind(this, key);
-	return bucket == NULL ? NULL : bucket->data;
+	return bucket ? bucket->data : NULL;
 }
 #else
 	;
@@ -152,8 +155,10 @@ static StTinyBucket* StNewTinyBucket(StTinyKey key, const void* data, int size) 
 	return this;
 }
 
-StTinyKey StStrKey(const char* s) {
+StTinyKey StStrKey(const char* restrict s) {
 	static char buf[sizeof(StTinyKey)] = {0};
+	if (!s)
+		return 0;
 	for (int i = 0; i < sizeof(buf); i++)
 		if (!s[i]) {
 			StMemcpy(buf, s, i);
@@ -161,6 +166,20 @@ StTinyKey StStrKey(const char* s) {
 			return *(StTinyKey*)buf;
 		}
 	return *(StTinyKey*)s;
+}
+
+StTinyKey StHashStr(const char* restrict s) {
+	// Thanks:
+	// 1. https://github.com/toggins/Klawiatura/blob/bf6d4a12877ee850ea2c52ae5e976fbf5f787aee/src/K_memory.c#L5
+	// 2. https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function
+	static const StTinyKey FNV_OFFSET = 0xcbf29ce484222325, FNV_PRIME = 0x00000100000001b3;
+
+	StTinyKey key = FNV_OFFSET;
+	for (const char* c = s; s && *c; c++) {
+		key ^= (StTinyKey)(unsigned char)(*c);
+		key *= FNV_PRIME;
+	}
+	return key;
 }
 
 StTinyMap* NewTinyMap() {
@@ -171,8 +190,8 @@ StTinyMap* NewTinyMap() {
 }
 
 static void FreeSingleBucket(StTinyBucket* this) {
-	if (this->data != NULL) {
-		if (this->cleanup != NULL)
+	if (this->data) {
+		if (this->cleanup)
 			this->cleanup(this->data);
 		StFree(this->data);
 		this->data = NULL;
@@ -182,14 +201,14 @@ static void FreeSingleBucket(StTinyBucket* this) {
 }
 
 static void FreeBucketChain(StTinyBucket* this) {
-	if (this != NULL) {
+	if (this) {
 		FreeBucketChain(this->next);
 		FreeSingleBucket(this);
 	}
 }
 
 void FreeTinyMap(StTinyMap* this) {
-	if (this == NULL)
+	if (!this)
 		return;
 	for (int i = 0; i < ST_TINY_MAP_CAPACITY; i++)
 		FreeBucketChain(this->buckets[i]);
@@ -198,7 +217,7 @@ void FreeTinyMap(StTinyMap* this) {
 
 StTinyBucket* StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size) {
 	int idx = StKey2Idx(key);
-	if (this->buckets[idx] == NULL) {
+	if (!this->buckets[idx]) {
 		this->buckets[idx] = StNewTinyBucket(key, data, size);
 		return this->buckets[idx];
 	}
@@ -206,7 +225,7 @@ StTinyBucket* StMapPut(StTinyMap* this, StTinyKey key, const void* data, int siz
 	StTinyBucket* bucket = this->buckets[idx];
 	if (bucket->key == key)
 		goto edit;
-	while (bucket->next != NULL) {
+	while (bucket->next) {
 		if (bucket->key == key)
 			goto edit;
 		bucket = bucket->next;
@@ -225,7 +244,7 @@ edit:
 
 StTinyBucket* StMapFind(const StTinyMap* this, StTinyKey key) {
 	StTinyBucket* bucket = this->buckets[StKey2Idx(key)];
-	while (bucket != NULL) {
+	while (bucket) {
 		if (bucket->key == key)
 			return bucket;
 		bucket = bucket->next;
@@ -236,14 +255,14 @@ StTinyBucket* StMapFind(const StTinyMap* this, StTinyKey key) {
 void StMapNuke(StTinyMap* this, StTinyKey key) {
 	int idx = StKey2Idx(key);
 	StTinyBucket* bucket = this->buckets[idx];
-	if (bucket == NULL)
+	if (!bucket)
 		return;
 	if (bucket->key == key) {
 		this->buckets[idx] = bucket->next;
 		FreeSingleBucket(bucket);
 		return;
 	}
-	while (bucket->next != NULL) {
+	while (bucket->next) {
 		if (bucket->next->key == key) {
 			bucket->next = bucket->next->next;
 			FreeSingleBucket(bucket->next);
@@ -262,14 +281,14 @@ StTinyMapIter StMapIter(StTinyMap* this) {
 }
 
 bool StMapNext(StTinyMapIter* iter) {
-	if (iter->source == NULL)
+	if (!iter->source)
 		return false;
 	if (iter->index >= ST_TINY_MAP_CAPACITY)
 		return false;
 
-	if (iter->at != NULL)
+	if (iter->at)
 		iter->at = iter->at->next;
-	while (iter->at == NULL) {
+	while (!iter->at) {
 		if (++iter->index >= ST_TINY_MAP_CAPACITY)
 			return false;
 		iter->at = iter->source->buckets[iter->index];

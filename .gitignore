@@ -1,2 +1,4 @@
 /build
 /.cache
+/__*
+/compile_commands.json
