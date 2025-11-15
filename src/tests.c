@@ -6,7 +6,7 @@
 static int counter = 1;
 #define AssertEq(a, b)                                                                                                 \
 	do {                                                                                                           \
-		fprintf(stdout, "test %2d : '%s' == '%s'\n", counter, (#a), (#b));                                     \
+		fprintf(stdout, "test %2d '%s' == '%s'\n", counter, (#a), (#b));                                       \
 		fflush(stdout);                                                                                        \
 		if ((a) != (b)) {                                                                                      \
 			fprintf(stdout, "failed (line %d)!!!\n", __LINE__);                                            \

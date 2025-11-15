@@ -17,5 +17,6 @@ AllowShortLoopsOnASingleLine: false
 AlwaysBreakAfterReturnType: None
 AccessModifierOffset: -8
 IndentCaseLabels: true
+RemoveBracesLLVM: true
 AlignAfterOpenBracket: DontAlign
 SortIncludes: CaseSensitive

@@ -81,11 +81,9 @@ bool StMapNext(StTinyMapIter* iter);
 #ifndef StLog
 #include <stdio.h>
 #define StLog(...)                                                                                                     \
-	do {                                                                                                           \
-		fprintf(stdout, "[S_tr]: " __VA_ARGS__);                                                               \
-		fprintf(stdout, "\n");                                                                                 \
-		fflush(stdout);                                                                                        \
-	} while (0)
+	do                                                                                                             \
+		fprintf(stdout, "[S_tr]: %c" __VA_ARGS__, '\n'), fflush(stdout);                                       \
+	while (0)
 #endif
 
 #define StOutOfJuice() StLog("Out of memory!!!")
@@ -144,12 +142,8 @@ static StTinyBucket* StNewTinyBucket(StTinyKey key, const void* data, int size) 
 
 	StTinyBucket* this = NULL;
 	StCheckedAlloc(this, sizeof(*this));
-	this->cleanup = NULL;
-	this->next = NULL;
-	this->key = key;
-
-	this->size = size;
-	this->data = NULL;
+	this->cleanup = NULL, this->next = NULL, this->key = key;
+	this->size = size, this->data = NULL;
 	StCheckedAlloc(this->data, this->size);
 	StMemcpy(this->data, data, this->size);
 	return this;
@@ -168,17 +162,15 @@ StTinyKey StStrKey(const char* restrict s) {
 	return *(StTinyKey*)s;
 }
 
-StTinyKey StHashStr(const char* restrict s) {
-	// Thanks:
-	// 1. https://github.com/toggins/Klawiatura/blob/bf6d4a12877ee850ea2c52ae5e976fbf5f787aee/src/K_memory.c#L5
-	// 2. https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function
-	static const StTinyKey FNV_OFFSET = 0xcbf29ce484222325, FNV_PRIME = 0x00000100000001b3;
+// Thanks:
+// 1. https://github.com/toggins/Klawiatura/blob/bf6d4a12877ee850ea2c52ae5e976fbf5f787aee/src/K_memory.c#L5
+// 2. https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function
 
+static const StTinyKey FNV_OFFSET = 0xcbf29ce484222325, FNV_PRIME = 0x00000100000001b3;
+StTinyKey StHashStr(const char* restrict s) {
 	StTinyKey key = FNV_OFFSET;
-	for (const char* c = s; s && *c; c++) {
-		key ^= (StTinyKey)(unsigned char)(*c);
-		key *= FNV_PRIME;
-	}
+	for (const char* c = s; s && *c; c++)
+		key ^= (StTinyKey)(uint8_t)*c, key *= FNV_PRIME;
 	return key;
 }
 
@@ -273,10 +265,8 @@ void StMapNuke(StTinyMap* this, StTinyKey key) {
 }
 
 StTinyMapIter StMapIter(StTinyMap* this) {
-	StTinyMapIter iter;
-	iter.source = this;
-	iter.index = -1;
-	iter.at = NULL;
+	StTinyMapIter iter = {0};
+	iter.source = this, iter.index = -1, iter.at = NULL;
 	return iter;
 }
 
