@@ -1,7 +1,9 @@
 #pragma once
 
+#ifndef S_TRUCTURES_NOSTD
 #include <stdbool.h>
 #include <stdint.h>
+#endif
 
 #define ST_TINY_MAP_CAPACITY (256)
 typedef uint64_t StTinyKey;
