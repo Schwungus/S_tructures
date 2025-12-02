@@ -88,14 +88,32 @@ bool StMapNext(StTinyMapIter* iter);
 	while (0)
 #endif
 
-#define StOutOfJuice() StLog("Out of memory!!!")
+#ifndef StDie
+
+#include <stdlib.h> // `EXIT_FAILURE` & `exit`
+
+__attribute__((noreturn)) void StDie()
+#ifdef S_TRUCTURES_IMPLEMENTATION
+{
+	exit(EXIT_FAILURE);
+}
+#else
+	;
+#endif
+
+#endif
+
+#define StOutOfJuice()                                                                                                 \
+	do {                                                                                                           \
+		StLog("Out of memory!!!");                                                                             \
+		StDie();                                                                                               \
+	} while (0)
+
 #define StCheckedAlloc(var, size)                                                                                      \
 	do {                                                                                                           \
 		(var) = StAlloc((size));                                                                               \
-		if (!(var)) {                                                                                          \
+		if (!(var))                                                                                            \
 			StOutOfJuice();                                                                                \
-			return NULL;                                                                                   \
-		}                                                                                                      \
 	} while (0)
 
 #endif
