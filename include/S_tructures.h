@@ -27,7 +27,7 @@ typedef struct StTinyMapIter {
 	int64_t index;
 } StTinyMapIter;
 
-/// Map up to 8 bytes of a character string to a `StTinyKey`.
+/// Map up to 8 bytes of a character string to an `StTinyKey`.
 StTinyKey StStrKey(const char* restrict s);
 
 /// Hash a string of arbitrary length to use that as an `StTinyMap` key.
