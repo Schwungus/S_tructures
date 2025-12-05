@@ -28,10 +28,10 @@ typedef struct StTinyMapIter {
 } StTinyMapIter;
 
 /// Map up to 8 bytes of a character string to an `StTinyKey`.
-StTinyKey StStrKey(const char* restrict s);
+StTinyKey StStrKey(const char* s);
 
 /// Hash a string of arbitrary length to use that as an `StTinyMap` key.
-StTinyKey StHashStr(const char* restrict s);
+StTinyKey StHashStr(const char* s);
 
 /// Create a new `StTinyMap`. Make sure to call `FreeTinyMap` afterwards.
 StTinyMap* NewTinyMap();
@@ -169,7 +169,7 @@ static StTinyBucket* StNewTinyBucket(StTinyKey key, const void* data, int size) 
 	return this;
 }
 
-StTinyKey StStrKey(const char* restrict s) {
+StTinyKey StStrKey(const char* s) {
 	static char buf[sizeof(StTinyKey)] = {0};
 	if (!s)
 		return 0;
@@ -187,7 +187,7 @@ StTinyKey StStrKey(const char* restrict s) {
 // 2. https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function
 
 static const StTinyKey FNV_OFFSET = 0xcbf29ce484222325, FNV_PRIME = 0x00000100000001b3;
-StTinyKey StHashStr(const char* restrict s) {
+StTinyKey StHashStr(const char* s) {
 	StTinyKey key = FNV_OFFSET;
 	for (const char* c = s; s && *c; c++)
 		key ^= (StTinyKey)(uint8_t)*c, key *= FNV_PRIME;
