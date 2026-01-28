@@ -5,7 +5,7 @@
 #include <stdint.h>
 #endif
 
-#ifdef _MSVC_VER
+#ifdef _MSC_VER
 #define ST_NORETURN __declspec(noreturn)
 #else
 #define ST_NORETURN __attribute__((noreturn))
