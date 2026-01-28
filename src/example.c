@@ -11,5 +11,6 @@ int main(int argc, char* argv[]) {
 	ST_MAP_FOREACH (map, it)
 		printf("%s\n", (char*)it.data);
 
-	FreeTinyMap(map);
+	FreeTinyMap(map), map = NULL;
+	return EXIT_SUCCESS;
 }

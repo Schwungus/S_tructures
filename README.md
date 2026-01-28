@@ -2,7 +2,7 @@
 
 Useful dynamic data structures for plain C. Currently only implements hashmaps.
 
-## Usage
+## Basic usage
 
 ### Installation
 
@@ -29,9 +29,9 @@ Then add a `S_tructures.c` file with the library's implementation details:
 
 And you're ready to go! Just `#include "S_tructures.h"` in your code, and have fun using these crutches.
 
-### Hashmaps
+### Tiny-map hashmaps
 
-For now, we only have relatively stable hashmaps to offer. Take a look into [our testbed](src/tests.c) for an overview of what our implementation can do. Actually, have a quick appetizer to get started:
+For now, we only have "tiny" hashmaps to offer. Here's a quick appetizer to get you started:
 
 ```c
 StTinyMap* map = NewTinyMap();
@@ -41,10 +41,18 @@ StMapPut(map, StHashStr("name"), "Bob!", strlen("Bob!") + 1);
 ST_MAP_FOREACH (map, it)
     printf("%s\n", (char*)it.data);
 
-FreeTinyMap(map);
+FreeTinyMap(map), map = NULL;
 ```
 
-## Advanced usage
+The tiny hashmaps have the following properties:
+
+1. They don't store the whole key you put in them, only an 8 byte hash. This is also why you need to use `StHashStr` to get a tiny-map-compatible key from a string key.
+2. They don't handle hash collisions, at all, due to the point above. If this issue breaks your program, you should buy a lottery ticket!
+3. They are orderless, i.e. they iterate in a "whatever" order. Don't rely on the order of insertion when doing a for-each over key-value pairs.
+
+Take a look into [our testbed](src/tests.c) for an overview of what other things our tiny-map hashmaps implementation can do.
+
+## Advanced use-cases
 
 ### Custom allocator
 
