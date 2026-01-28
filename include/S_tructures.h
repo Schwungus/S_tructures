@@ -302,19 +302,24 @@ StTinyMapIter StMapIter(StTinyMap* this) {
 
 bool StMapNext(StTinyMapIter* iter) {
 	if (!iter->source)
-		return false;
+		goto nein;
 	if (iter->index >= ST_TINY_MAP_CAPACITY)
-		return false;
+		goto nein;
 
 	if (iter->at)
 		iter->at = iter->at->next;
 	while (!iter->at) {
 		if (++iter->index >= ST_TINY_MAP_CAPACITY)
-			return false;
+			goto nein;
 		iter->at = iter->source->buckets[iter->index];
 	}
+
 	iter->data = iter->at ? iter->at->data : NULL;
 	return true;
+
+nein:
+	iter->data = iter->at = NULL;
+	return false;
 }
 
 #undef StKey2Idx
