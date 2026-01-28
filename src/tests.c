@@ -64,11 +64,10 @@ void test_hashmaps() {
 	StMapNuke(map, 1337);
 	AssertEq(StMapGet(map, 1337), NULL);
 
-	StTinyMapIter iter = StMapIter(map);
-	int iterCount = 0;
-	while (StMapNext(&iter))
-		iterCount++;
-	AssertEq(iterCount, test_entry_count);
+	int iter_count = 0;
+	ST_MAP_FOREACH (map, it)
+		iter_count++;
+	AssertEq(iter_count, test_entry_count);
 
 	FreeTinyMap(map);
 	printf("\n");

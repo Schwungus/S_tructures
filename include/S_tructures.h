@@ -27,6 +27,8 @@ typedef struct {
 	int64_t index;
 } StTinyMapIter;
 
+#define ST_MAP_FOREACH(map, iter) for (StTinyMapIter iter = StMapIter(map); StMapNext(&(iter)); )
+
 /// Map up to 8 bytes of a character string to an `StTinyKey`.
 StTinyKey StStrKey(const char* s);
 
