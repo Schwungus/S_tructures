@@ -30,10 +30,11 @@ typedef struct {
 typedef struct {
 	StTinyMap* source;
 	StTinyBucket* at;
+	void* data;
 	int64_t index;
 } StTinyMapIter;
 
-#define ST_MAP_FOREACH(map, iter) for (StTinyMapIter iter = StMapIter(map); StMapNext(&(iter)); )
+#define ST_MAP_FOREACH(map, iter) for (StTinyMapIter iter = StMapIter(map); StMapNext(&(iter));)
 
 /// Map up to 8 bytes of a character string to an `StTinyKey`.
 StTinyKey StStrKey(const char* s);
@@ -294,7 +295,8 @@ void StMapNuke(StTinyMap* this, StTinyKey key) {
 
 StTinyMapIter StMapIter(StTinyMap* this) {
 	StTinyMapIter iter = {0};
-	iter.source = this, iter.index = -1, iter.at = NULL;
+	iter.source = this, iter.index = -1;
+	iter.at = iter.data = NULL;
 	return iter;
 }
 
@@ -311,6 +313,7 @@ bool StMapNext(StTinyMapIter* iter) {
 			return false;
 		iter->at = iter->source->buckets[iter->index];
 	}
+	iter->data = iter->at ? iter->at->data : NULL;
 	return true;
 }
 

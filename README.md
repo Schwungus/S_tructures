@@ -38,8 +38,8 @@ StTinyMap* map = NewTinyMap();
 StMapPut(map, StHashStr("greeting"), "hello", strlen("hello!") + 1);
 StMapPut(map, StHashStr("name"), "Bob!", strlen("Bob!") + 1);
 
-ST_MAP_FOREACH (map, iter)
-    printf("%s\n", (char*)iter.at->data);
+ST_MAP_FOREACH (map, it)
+    printf("%s\n", (char*)it.data);
 
 FreeTinyMap(map);
 ```
