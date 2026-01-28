@@ -5,6 +5,12 @@
 #include <stdint.h>
 #endif
 
+#ifdef _MSVC_VER
+#define ST_NORETURN __declspec(noreturn)
+#else
+#define ST_NORETURN __attribute__((noreturn))
+#endif
+
 #define ST_TINY_MAP_CAPACITY (256)
 typedef uint64_t StTinyKey;
 
@@ -94,7 +100,7 @@ bool StMapNext(StTinyMapIter* iter);
 
 #include <stdlib.h> // `EXIT_FAILURE` & `exit`
 
-__attribute__((noreturn)) void StDie()
+ST_NORETURN void StDie()
 #ifdef S_TRUCTURES_IMPLEMENTATION
 {
 	exit(EXIT_FAILURE);
