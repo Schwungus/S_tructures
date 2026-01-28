@@ -4,6 +4,8 @@ Useful dynamic data structures for plain C. Currently only implements hashmaps.
 
 ## Usage
 
+### Installation
+
 Include the library in your CMake project by modifying your `CMakeLists.txt`:
 
 ```cmake
@@ -25,9 +27,26 @@ Then add a `S_tructures.c` file with the library's implementation details:
 #include "S_tructures.h" // IWYU pragma: keep
 ```
 
-And you're ready to go! Just `#include "S_tructures.h"` in your code, and have fun using these crutches. Look into [our testbed](src/tests.c) to see them in action.
+And you're ready to go! Just `#include "S_tructures.h"` in your code, and have fun using these crutches.
 
-## Customization
+### Hashmaps
+
+For now, we only have relatively stable hashmaps to offer. Take a look into [our testbed](src/tests.c) for an overview of what our implementation can do. Actually, have a quick appetizer to get started:
+
+```c
+StTinyMap* map = NewTinyMap();
+StMapPut(map, StHashStr("greeting"), "hello", strlen("hello!") + 1);
+StMapPut(map, StHashStr("name"), "Bob!", strlen("Bob!") + 1);
+
+ST_MAP_FOREACH (map, iter)
+    printf("%s\n", (char*)iter.at->data);
+
+FreeTinyMap(map);
+```
+
+## Advanced usage
+
+### Custom allocator
 
 In your `S_tructures.c`, you can customize the memory allocator by defining `StAlloc`, `StFree`, `StMemset`, and `StMemcpy`. For example, to use memory utilities provided by SDL3, you can define:
 
@@ -42,6 +61,8 @@ In your `S_tructures.c`, you can customize the memory allocator by defining `StA
 #include "S_tructures.h" // IWYU pragma: keep
 ```
 
+### Custom logger
+
 `StLog` is called when spitting useful error messages, and can be customized as well. Here's how it's defined by default:
 
 ```c
@@ -54,9 +75,7 @@ In your `S_tructures.c`, you can customize the memory allocator by defining `StA
     } while (0)
 ```
 
-## Advanced Usage
-
-### `StTinyBucket` Cleanup Function
+### `StTinyBucket` cleanup function
 
 You can set a custom cleanup function to call before deallocating data from a bucket. For example:
 
