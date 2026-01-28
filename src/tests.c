@@ -13,13 +13,13 @@ static int counter = 1;
 		counter++;                                                                                             \
 	} while (0)
 
-static const int testCount = 8;
-static void testCleanup(void* ptr) {
+static const int test_entry_count = 8;
+static void cleanup_test_entry(void* ptr) {
 	int32_t data = *(int32_t*)ptr;
-	printf("%d ", data ^ testCount);
+	printf("%d ", data ^ test_entry_count);
 }
 
-void testMaps() {
+void test_hashmaps() {
 	// Simple map put.
 	StTinyMap* map = NewTinyMap();
 	int32_t data = 128;
@@ -34,13 +34,13 @@ void testMaps() {
 	AssertEq(StMapGetI32(map, 1337), 128);
 
 	// Fill with junk data and test cleanup. `testCleanup` just prints out the values we put in.
-	for (int i = 0; i < testCount; i++) {
-		int32_t data = testCount ^ i;
-		StTinyBucket* b = StMapPut(map, i ^ testCount, &data, sizeof(data));
-		b->cleanup = testCleanup;
+	for (int i = 0; i < test_entry_count; i++) {
+		int32_t data = test_entry_count ^ i;
+		StTinyBucket* b = StMapPut(map, i ^ test_entry_count, &data, sizeof(data));
+		b->cleanup = cleanup_test_entry;
 	}
-	for (int i = 0; i < testCount; i++)
-		AssertEq(StMapGetI32(map, i ^ testCount), testCount ^ i);
+	for (int i = 0; i < test_entry_count; i++)
+		AssertEq(StMapGetI32(map, i ^ test_entry_count), test_entry_count ^ i);
 	// Still using the map with a { 1337: 128 } entry...
 
 	// String key (direct mapping).
@@ -68,15 +68,14 @@ void testMaps() {
 	int iterCount = 0;
 	while (StMapNext(&iter))
 		iterCount++;
-	AssertEq(iterCount, testCount);
+	AssertEq(iterCount, test_entry_count);
 
 	FreeTinyMap(map);
 	printf("\n");
 }
 
 int main(int argc, char* argv[]) {
-	testMaps();
-	printf("All good!\n");
-	fflush(stdout);
+	test_hashmaps();
+	printf("All good!\n"), fflush(stdout);
 	return EXIT_SUCCESS;
 }

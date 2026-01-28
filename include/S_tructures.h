@@ -16,12 +16,12 @@ typedef struct StTinyBucket {
 } StTinyBucket;
 
 /// A tiny hashmap-like structure indexed with 8-byte keys.
-typedef struct StTinyMap {
+typedef struct {
 	StTinyBucket* buckets[ST_TINY_MAP_CAPACITY];
 } StTinyMap;
 
 /// Iterate over `StTinyMap` key-value pairs using `StMapIter()`.
-typedef struct StTinyMapIter {
+typedef struct {
 	StTinyMap* source;
 	StTinyBucket* at;
 	int64_t index;
