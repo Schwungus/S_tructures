@@ -11,6 +11,8 @@ target_include_directories(S_tructures
 
 option(S_TRUCTURES_BUILD_TEST "Build the test executable?")
 if(S_TRUCTURES_BUILD_TEST)
+    set(CMAKE_C_STANDARD 11)
+
     add_executable(S_tructuresTest ${CMAKE_CURRENT_SOURCE_DIR}/src/tests.c)
     target_link_libraries(S_tructuresTest S_tructures)
 

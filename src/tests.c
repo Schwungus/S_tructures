@@ -65,7 +65,7 @@ void test_hashmaps() {
 	AssertEq(StMapGet(map, 1337), NULL);
 
 	int iter_count = 0;
-	ST_MAP_FOREACH (map, it)
+	ST_FOREACH (map, it)
 		iter_count++;
 	AssertEq(iter_count, test_entry_count);
 

@@ -26,15 +26,22 @@ typedef struct {
 	StTinyBucket* buckets[ST_TINY_MAP_CAPACITY];
 } StTinyMap;
 
+typedef enum {
+	ST_ITERATOR_MAP,
+} StIteratorKind;
+
 /// Iterate over `StTinyMap` key-value pairs using `StMapIter()`.
 typedef struct {
-	StTinyMap* source;
-	StTinyBucket* at;
-	void* data;
-	int64_t index;
-} StTinyMapIter;
+	const StIteratorKind kind;
+	void *const source, *bucket, *data;
+	int64_t aux;
+} StIterator;
 
-#define ST_MAP_FOREACH(map, iter) for (StTinyMapIter iter = StMapIter(map); StMapNext(&(iter));)
+#define ST_MAP_FOREACH(map, iter) for (StIterator iter = StMapIter(map); StIterNext(&(iter));)
+
+#if __STDC_VERSION__ >= 201112L
+#define ST_FOREACH(map, iter) for (StIterator iter = _Generic((map), StTinyMap*: StMapIter)(map); StIterNext(&(iter));)
+#endif
 
 /// Map up to 8 bytes of a character string to an `StTinyKey`.
 StTinyKey StStrKey(const char* s);
@@ -59,13 +66,15 @@ StTinyBucket* StMapFind(const StTinyMap* this, StTinyKey key);
 /// Free bucket & data associated with input key.
 void StMapNuke(StTinyMap* this, StTinyKey key);
 
-/// Create an iterator of key-value pairs inside the map.
+/// Create an iterator of values inside the map.
 ///
-/// Use `.at` for current entry. Use `StMapNext()` to go to the next.
-StTinyMapIter StMapIter(StTinyMap* this);
+/// Use `.data` to get current entry. Use `StIterNext()` to go to the next value.
+///
+///
+StIterator StTinyMapIter(void* this);
 
 /// Return `true` and set `.at` to the next entry if there is one. Return `false` and set `.at` to `NULL` otherwise.
-bool StMapNext(StTinyMapIter* iter);
+bool StIterNext(StIterator* iter);
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
 
@@ -293,33 +302,49 @@ void StMapNuke(StTinyMap* this, StTinyKey key) {
 	}
 }
 
-StTinyMapIter StMapIter(StTinyMap* this) {
-	StTinyMapIter iter = {0};
-	iter.source = this, iter.index = -1;
-	iter.at = iter.data = NULL;
-	return iter;
+StIterator StMapIter(void* this) {
+	return (StIterator){
+		.kind = ST_ITERATOR_MAP,
+		.source = this,
+		.aux = -1,
+	};
 }
 
-bool StMapNext(StTinyMapIter* iter) {
-	if (!iter->source)
-		goto nein;
-	if (iter->index >= ST_TINY_MAP_CAPACITY)
-		goto nein;
+static bool StMapIterNext(StIterator* iter) {
+	if (iter->aux >= ST_TINY_MAP_CAPACITY)
+		return false;
 
-	if (iter->at)
-		iter->at = iter->at->next;
-	while (!iter->at) {
-		if (++iter->index >= ST_TINY_MAP_CAPACITY)
-			goto nein;
-		iter->at = iter->source->buckets[iter->index];
+	if (iter->bucket)
+		iter->bucket = ((StTinyBucket*)iter->bucket)->next;
+	while (!iter->bucket) {
+		if (++iter->aux >= ST_TINY_MAP_CAPACITY)
+			return false;
+		iter->bucket = ((StTinyMap*)iter->source)->buckets[iter->aux];
 	}
 
-	iter->data = iter->at ? iter->at->data : NULL;
+	iter->data = iter->bucket ? ((StTinyBucket*)iter->bucket)->data : NULL;
 	return true;
+}
 
-nein:
-	iter->data = iter->at = NULL;
-	return false;
+static bool StGenericIterNext(StIterator* iter) {
+	switch (iter->kind) {
+		case ST_ITERATOR_MAP:
+			return StMapIterNext(iter);
+		default:
+			return false;
+	}
+}
+
+bool StIterNext(StIterator* iter) {
+	if (!iter->source) {
+		iter->data = iter->bucket = NULL;
+		return false;
+	}
+
+	bool result = StGenericIterNext(iter);
+	if (!result)
+		iter->data = iter->bucket = NULL;
+	return result;
 }
 
 #undef StKey2Idx
