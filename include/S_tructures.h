@@ -26,13 +26,9 @@ typedef struct {
 	StTinyBucket* buckets[ST_TINY_MAP_CAPACITY];
 } StTinyMap;
 
-typedef enum {
-	ST_ITERATOR_MAP,
-} StIteratorKind;
-
-/// Iterate over `StTinyMap` key-value pairs using `StMapIter()`.
-typedef struct {
-	const StIteratorKind kind;
+/// A generic iterator over `St*` datastructures.
+typedef struct StIterator {
+	bool (*const next)(struct StIterator*);
 	void *const source, *bucket, *data;
 	int64_t aux;
 } StIterator;
@@ -324,14 +320,6 @@ void StMapNuke(StTinyMap* this, StTinyKey key) {
 	}
 }
 
-StIterator StMapIter(void* this) {
-	return (StIterator){
-		.kind = ST_ITERATOR_MAP,
-		.source = this,
-		.aux = -1,
-	};
-}
-
 static bool StMapIterNext(StIterator* iter) {
 	if (iter->aux >= ST_TINY_MAP_CAPACITY)
 		return false;
@@ -348,25 +336,19 @@ static bool StMapIterNext(StIterator* iter) {
 	return true;
 }
 
-static bool StGenericIterNext(StIterator* iter) {
-	switch (iter->kind) {
-		case ST_ITERATOR_MAP:
-			return StMapIterNext(iter);
-		default:
-			return false;
-	}
+StIterator StMapIter(void* this) {
+	return (StIterator){
+		.next = StMapIterNext,
+		.source = this,
+		.aux = -1,
+	};
 }
 
 bool StIterNext(StIterator* iter) {
-	if (!iter->source) {
-		iter->data = iter->bucket = NULL;
-		return false;
-	}
-
-	bool result = StGenericIterNext(iter);
-	if (!result)
-		iter->data = iter->bucket = NULL;
-	return result;
+	if (iter->source && iter->next && iter->next(iter))
+		return true;
+	iter->data = iter->bucket = NULL;
+	return false;
 }
 
 #undef StKey2Idx
