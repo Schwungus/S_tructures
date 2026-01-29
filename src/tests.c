@@ -4,14 +4,17 @@
 #define S_TRUCTURES_IMPLEMENTATION
 #include "S_tructures.h"
 
-static int counter = 1;
-#define AssertEq(a, b)                                                                                                 \
-	do {                                                                                                           \
-		fprintf(stdout, "test %2d '%s' == '%s'\n", counter, (#a), (#b)), fflush(stdout);                       \
-		if ((a) != (b))                                                                                        \
-			fprintf(stdout, "failed (line %d)!!!\n", __LINE__), fflush(stdout), exit(EXIT_FAILURE);        \
-		counter++;                                                                                             \
+#define AssertEq(a, b)                                                         \
+	do {                                                                   \
+		fprintf(stdout, "t%02d '%s' == '%s'\n", counter, (#a), (#b));  \
+		fflush(stdout);                                                \
+		if ((a) != (b)) {                                              \
+			fprintf(stdout, "failed (line %d)!!!\n", __LINE__);    \
+			fflush(stdout), exit(EXIT_FAILURE);                    \
+		}                                                              \
+		counter++;                                                     \
 	} while (0)
+static int counter = 1;
 
 static const int test_entry_count = 8;
 static void cleanup_test_entry(void* ptr) {
@@ -33,14 +36,17 @@ void test_hashmaps() {
 	StMapPut(map, 1337, &data, sizeof(data));
 	AssertEq(StMapGetI32(map, 1337), 128);
 
-	// Fill with junk data and test cleanup. `testCleanup` just prints out the values we put in.
+	// Fill with junk data and test cleanup. `testCleanup` just prints out
+	// the values we put in.
 	for (int i = 0; i < test_entry_count; i++) {
 		int32_t data = test_entry_count ^ i;
-		StTinyBucket* b = StMapPut(map, i ^ test_entry_count, &data, sizeof(data));
+		StTinyBucket* b = StMapPut(
+			map, i ^ test_entry_count, &data, sizeof(data));
 		b->cleanup = cleanup_test_entry;
 	}
 	for (int i = 0; i < test_entry_count; i++)
-		AssertEq(StMapGetI32(map, i ^ test_entry_count), test_entry_count ^ i);
+		AssertEq(StMapGetI32(map, i ^ test_entry_count),
+			test_entry_count ^ i);
 	// Still using the map with a { 1337: 128 } entry...
 
 	// String key (direct mapping).

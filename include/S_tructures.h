@@ -37,10 +37,16 @@ typedef struct {
 	int64_t aux;
 } StIterator;
 
-#define ST_MAP_FOREACH(map, iter) for (StIterator iter = StMapIter(map); StIterNext(&(iter));)
+#define ST_MAP_FOREACH(map, iter)                                              \
+	for (StIterator iter = StMapIter(map); StIterNext(&(iter));)
 
 #if __STDC_VERSION__ >= 201112L
-#define ST_FOREACH(map, iter) for (StIterator iter = _Generic((map), StTinyMap*: StMapIter)(map); StIterNext(&(iter));)
+
+#define ST_ITER(map) _Generic(*(map), StTinyMap: StMapIter)(map)
+
+#define ST_FOREACH(map, iter)                                                  \
+	for (StIterator iter = ST_ITER(map); StIterNext(&(iter));)
+
 #endif
 
 /// Map up to 8 bytes of a character string to an `StTinyKey`.
@@ -55,10 +61,13 @@ StTinyMap* NewTinyMap();
 /// Cleanup a `StTinyMap`.
 void FreeTinyMap(StTinyMap* this);
 
-/// Insert data into the tinymap. Allocates a chunk of memory and copies data from input.
+/// Insert data into the tinymap. Allocates a chunk of memory and copies data
+/// from input.
 ///
-/// Also returns the resulting bucket in case you need to set the cleanup function.
-StTinyBucket* StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size);
+/// This also returns the resulting bucket in case you need to set a cleanup
+/// function.
+StTinyBucket*
+StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size);
 
 /// Find the bucket by input key, or return `NULL` if there is none.
 StTinyBucket* StMapFind(const StTinyMap* this, StTinyKey key);
@@ -68,12 +77,12 @@ void StMapNuke(StTinyMap* this, StTinyKey key);
 
 /// Create an iterator of values inside the map.
 ///
-/// Use `.data` to get current entry. Use `StIterNext()` to go to the next value.
-///
-///
+/// Use `.data` to get current entry. Use `StIterNext()` to go to the next
+/// value.
 StIterator StTinyMapIter(void* this);
 
-/// Return `true` and set `.at` to the next entry if there is one. Return `false` and set `.at` to `NULL` otherwise.
+/// Return `true` and set `.at` to the next entry if there is one. Return
+/// `false` and set `.at` to `NULL` otherwise.
 bool StIterNext(StIterator* iter);
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
@@ -100,10 +109,11 @@ bool StIterNext(StIterator* iter);
 
 #ifndef StLog
 #include <stdio.h>
-#define StLog(...)                                                                                                     \
-	do                                                                                                             \
-		fprintf(stdout, "[S_tr]: %c" __VA_ARGS__, '\n'), fflush(stdout);                                       \
-	while (0)
+#define StLog(...)                                                             \
+	do {                                                                   \
+		fprintf(stdout, "[S_tr]: %c" __VA_ARGS__, '\n');               \
+		fflush(stdout);                                                \
+	} while (0)
 #endif
 
 #ifndef StDie
@@ -121,29 +131,30 @@ ST_NORETURN void StDie()
 
 #endif
 
-#define StOutOfJuice()                                                                                                 \
-	do {                                                                                                           \
-		StLog("Out of memory!!!");                                                                             \
-		StDie();                                                                                               \
+#define StOutOfJuice()                                                         \
+	do {                                                                   \
+		StLog("Out of memory!!!");                                     \
+		StDie();                                                       \
 	} while (0)
 
-#define StCheckedAlloc(var, size)                                                                                      \
-	do {                                                                                                           \
-		(var) = StAlloc((size));                                                                               \
-		if (!(var))                                                                                            \
-			StOutOfJuice();                                                                                \
+#define StCheckedAlloc(var, size)                                              \
+	do {                                                                   \
+		(var) = StAlloc((size));                                       \
+		if (!(var))                                                    \
+			StOutOfJuice();                                        \
 	} while (0)
 
 #endif
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
-#define ST_MAKE_MAP_GET(suffix, type)                                                                                  \
-	type StMapGet##suffix(const StTinyMap* this, StTinyKey key) {                                                  \
-		StTinyBucket* bucket = StMapFind(this, key);                                                           \
-		return bucket ? *(type*)bucket->data : 0;                                                              \
+#define ST_MAKE_MAP_GET(suffix, type)                                          \
+	type StMapGet##suffix(const StTinyMap* this, StTinyKey key) {          \
+		StTinyBucket* bucket = StMapFind(this, key);                   \
+		return bucket ? *(type*)bucket->data : 0;                      \
 	}
 #else
-#define ST_MAKE_MAP_GET(suffix, type) type StMapGet##suffix(const StTinyMap*, StTinyKey)
+#define ST_MAKE_MAP_GET(suffix, type)                                          \
+	type StMapGet##suffix(const StTinyMap*, StTinyKey)
 #endif
 
 void* StMapGet(const StTinyMap* this, StTinyKey key)
@@ -172,7 +183,8 @@ static const StTinyKey StShuffleKey(const StTinyKey key) {
 	return key ^ (key >> (4 * sizeof(key)));
 }
 
-static StTinyBucket* StNewTinyBucket(StTinyKey key, const void* data, int size) {
+static StTinyBucket*
+StNewTinyBucket(StTinyKey key, const void* data, int size) {
 	if (size < 1) { // TODO: bar behind a debug build check?
 		StLog("Requested bucket size 0; catching on fire");
 		return NULL;
@@ -200,15 +212,23 @@ StTinyKey StStrKey(const char* s) {
 	return *(StTinyKey*)s;
 }
 
-// Thanks:
-// 1. https://github.com/toggins/Klawiatura/blob/bf6d4a12877ee850ea2c52ae5e976fbf5f787aee/src/K_memory.c#L5
-// 2. https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function
+// clang-format off
 
-static const StTinyKey FNV_OFFSET = 0xcbf29ce484222325, FNV_PRIME = 0x00000100000001b3;
+// Thanks:
+// 1. <https://github.com/toggins/Klawiatura/blob/bf6d4a12877ee850ea2c52ae5e976fbf5f787aee/src/K_memory.c#L5>
+// 2. <https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function>
+
+// clang-format on
+
+#define ST_FNV_OFFSET ((StTinyKey)0xcbf29ce484222325)
+#define ST_FNV_PRIME ((StTinyKey)0x00000100000001b3)
+
 StTinyKey StHashStr(const char* s) {
-	StTinyKey key = FNV_OFFSET;
-	for (const char* c = s; s && *c; c++)
-		key ^= (StTinyKey)(uint8_t)*c, key *= FNV_PRIME;
+	StTinyKey key = ST_FNV_OFFSET;
+	for (const char* c = s; s && *c; c++) {
+		key ^= (StTinyKey)(uint8_t)*c;
+		key *= ST_FNV_PRIME;
+	}
 	return key;
 }
 
@@ -245,7 +265,8 @@ void FreeTinyMap(StTinyMap* this) {
 	StFree(this);
 }
 
-StTinyBucket* StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size) {
+StTinyBucket*
+StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size) {
 	int idx = StKey2Idx(key);
 	if (!this->buckets[idx]) {
 		this->buckets[idx] = StNewTinyBucket(key, data, size);
