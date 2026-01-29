@@ -42,10 +42,11 @@ typedef struct {
 
 #if __STDC_VERSION__ >= 201112L
 
-#define ST_ITER(map) _Generic(*(map), StTinyMap: StMapIter)(map)
+#define ST_ITER(container)                                                     \
+	_Generic(*(container), StTinyMap: StMapIter)(container)
 
-#define ST_FOREACH(map, iter)                                                  \
-	for (StIterator iter = ST_ITER(map); StIterNext(&(iter));)
+#define ST_FOREACH(container, iter)                                            \
+	for (StIterator iter = ST_ITER(container); StIterNext(&(iter));)
 
 #endif
 
