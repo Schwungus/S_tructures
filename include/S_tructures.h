@@ -43,7 +43,7 @@ typedef struct StIterator {
 #if __STDC_VERSION__ >= 201112L
 
 #define ST_ITER(container)                                                     \
-	_Generic(*(container), StTinyMap: StMapIter)(container)
+	(_Generic(*(container), StTinyMap: StMapIter)(container))
 
 #define ST_FOREACH(container, iter)                                            \
 	for (StIterator iter = ST_ITER(container); StIterNext(&(iter));)
