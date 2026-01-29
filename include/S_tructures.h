@@ -12,8 +12,12 @@
 #endif
 
 #define ST_TINY_MAP_CAPACITY (256)
+
+/// A unique identifier for a tiny-map entry. If you need more than 8 bytes per
+/// key, try squeezing it into a hash using `StHashStr()`.
 typedef uint64_t StTinyKey;
 
+/// An internal storage cell for `StTinyMap`s. Essentially a singly linked list.
 typedef struct StTinyBucket {
 	StTinyKey key;
 	void *data, (*cleanup)(void*);
@@ -46,13 +50,14 @@ typedef struct StIterator {
 
 #endif
 
-/// Map up to 8 bytes of a character string to an `StTinyKey`.
+/// Copy up to 8 bytes from a string and return them as an `StTinyKey`.
 StTinyKey StStrKey(const char* s);
 
-/// Hash a string of arbitrary length to use that as an `StTinyMap` key.
+/// Hash a string of arbitrary length into an `StTinyKey`.
 StTinyKey StHashStr(const char* s);
 
-/// Create a new `StTinyMap`. Make sure to call `FreeTinyMap` afterwards.
+/// Create a new `StTinyMap`. Make sure to call `FreeTinyMap` after you're done
+/// with it.
 StTinyMap* NewTinyMap();
 
 /// Cleanup a `StTinyMap`.
@@ -69,17 +74,17 @@ StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size);
 /// Find the bucket by input key, or return `NULL` if there is none.
 StTinyBucket* StMapFind(const StTinyMap* this, StTinyKey key);
 
-/// Free bucket & data associated with input key.
+/// Free the bucket and the data associated with a key.
 void StMapNuke(StTinyMap* this, StTinyKey key);
 
-/// Create an iterator of values inside the map.
+/// Create an iterator over the values of a tiny-map.
 ///
-/// Use `.data` to get current entry. Use `StIterNext()` to go to the next
-/// value.
+/// Pointer-cast and dereference `.data` to get the value of the current entry.
+/// Cast `.bucket` to `StTinyBucket` to set/unset a cleanup function.
 StIterator StTinyMapIter(void* this);
 
-/// Return `true` and set `.at` to the next entry if there is one. Return
-/// `false` and set `.at` to `NULL` otherwise.
+/// Return true and advance if there is an entry available. Return false and
+/// null `.data` otherwise.
 bool StIterNext(StIterator* iter);
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
