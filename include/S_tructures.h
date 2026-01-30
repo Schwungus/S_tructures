@@ -81,7 +81,7 @@ void StMapNuke(StTinyMap* this, StTinyKey key);
 ///
 /// Pointer-cast and dereference `.data` to get the value of the current entry.
 /// Cast `.bucket` to `StTinyBucket` to set/unset a cleanup function.
-StIterator StTinyMapIter(void* this);
+StIterator StMapIter(void* this);
 
 /// Return true and advance if there is an entry available. Return false and
 /// null `.data` otherwise.
