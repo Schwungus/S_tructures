@@ -1,82 +1,115 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define S_TRUCTURES_IMPLEMENTATION
-#include "S_tructures.h"
+static int malloc_counter = 0;
 
-#define AssertEq(a, b)                                                         \
-	do {                                                                   \
-		fprintf(stdout, "t%02d '%s' == '%s'\n", counter, (#a), (#b));  \
-		fflush(stdout);                                                \
-		if ((a) != (b)) {                                              \
-			fprintf(stdout, "failed (line %d)!!!\n", __LINE__);    \
-			fflush(stdout), exit(EXIT_FAILURE);                    \
-		}                                                              \
-		counter++;                                                     \
-	} while (0)
-static int counter = 1;
-
-static const int test_entry_count = 8;
-static void cleanup_test_entry(void* ptr) {
-	int32_t data = *(int32_t*)ptr;
-	printf("%d ", data ^ test_entry_count);
+static void* counted_malloc(int size) {
+	malloc_counter++;
+	return malloc(size);
 }
 
-void test_hashmaps() {
-	// Simple map put.
+static void counted_free(void* ptr) {
+	malloc_counter--;
+	free(ptr);
+}
+
+#define S_TRUCTURES_IMPLEMENTATION
+#define StAlloc counted_malloc
+#define StFree counted_free
+#include "S_tructures.h"
+
+#define run_test(fn) _run_test(#fn, fn)
+static void _run_test(const char* name, void (*fn)()) {
+	static int test_counter = 0;
+	printf("TEST #%d '%s':\n\n", ++test_counter, name);
+	fflush(stdout);
+
+	malloc_counter = 0;
+	fn();
+	if (malloc_counter) {
+		printf("FAIL: leaked %d allocations\n", malloc_counter);
+		fflush(stdout), exit(EXIT_FAILURE);
+	}
+
+	printf("PASS\n\n");
+	fflush(stdout);
+}
+
+#define assert_eq(a, b)                                                        \
+	do {                                                                   \
+		if ((a) == (b))                                                \
+			break;                                                 \
+		fprintf(stdout, "'%s' == '%s'\n", (#a), (#b));                 \
+		fprintf(stdout, "FAIL: line %d\n", __LINE__);                  \
+		fflush(stdout), exit(EXIT_FAILURE);                            \
+	} while (0)
+
+static void map_simple_put_retrieve() {
 	StTinyMap* map = NewTinyMap();
 	int32_t data = 128;
-	StMapPut(map, 0, &data, sizeof(data));
-	AssertEq(StMapGetI32(map, 0), 128);
-	FreeTinyMap(map);
 
-	// Simple map put and retrieve.
-	map = NewTinyMap();
-	data = 128;
 	StMapPut(map, 1337, &data, sizeof(data));
-	AssertEq(StMapGetI32(map, 1337), 128);
+	assert_eq(StMapGetI32(map, 1337), 128);
 
-	// Fill with junk data and test cleanup. `testCleanup` just prints out
-	// the values we put in.
-	for (int i = 0; i < test_entry_count; i++) {
-		int32_t data = test_entry_count ^ i;
-		StTinyBucket* b = StMapPut(
-			map, i ^ test_entry_count, &data, sizeof(data));
-		b->cleanup = cleanup_test_entry;
-	}
-	for (int i = 0; i < test_entry_count; i++)
-		AssertEq(StMapGetI32(map, i ^ test_entry_count),
-			test_entry_count ^ i);
-	// Still using the map with a { 1337: 128 } entry...
+	FreeTinyMap(map);
+}
 
-	// String key (direct mapping).
-	data = 228;
+static void map_string_key() {
+	StTinyMap* map = NewTinyMap();
+	int32_t data = 228;
+
 	StMapPut(map, StStrKey("Key1"), &data, sizeof(data));
-	AssertEq(StMapGetI32(map, StStrKey("Key1")), 228);
+	assert_eq(StMapGetI32(map, StStrKey("Key1")), 228);
 
-	// Nuke correctness check.
+	FreeTinyMap(map);
+}
+
+static void map_string_key_and_nuke() {
+	StTinyMap* map = NewTinyMap();
+	int32_t data = 228;
+
 	StMapNuke(map, StStrKey("Key1"));
-	AssertEq(StMapGet(map, StStrKey("Key1")), NULL);
+	assert_eq(StMapGet(map, StStrKey("Key1")), NULL);
 
-	// Same with a hashed string.
-	data = 67;
+	FreeTinyMap(map);
+}
+
+static void map_string_hash_and_nuke() {
+	StTinyMap* map = NewTinyMap();
+	int32_t data = 67;
+
 	StMapPut(map, StHashStr("SIX SEVEN"), &data, sizeof(data));
-	AssertEq(StMapGetI32(map, StHashStr("SIX SEVEN")), 67);
-	StMapNuke(map, StHashStr("SIX SEVEN"));
-	AssertEq(StMapGet(map, StHashStr("SIX SEVEN")), NULL);
+	assert_eq(StMapGetI32(map, StHashStr("SIX SEVEN")), 67);
 
-	// Just checking if the 1337 key is still there.
-	AssertEq(StMapGetI32(map, 1337), 128);
-	StMapNuke(map, 1337);
-	AssertEq(StMapGet(map, 1337), NULL);
+	StMapNuke(map, StHashStr("SIX SEVEN"));
+	assert_eq(StMapGet(map, StHashStr("SIX SEVEN")), NULL);
+
+	FreeTinyMap(map);
+}
+
+static void map_retains_entries() {
+	const int entry_count = 1024;
+	StTinyMap* map = NewTinyMap();
+
+	const int32_t data = 67;
+	for (int i = 0; i < entry_count; i++)
+		StMapPut(map, i, &data, sizeof(data));
 
 	int iter_count = 0;
 	ST_FOREACH (map, it)
-		iter_count++;
-	AssertEq(iter_count, test_entry_count);
+		assert_eq(StMapGetI32(map, iter_count++), data);
+	assert_eq(iter_count, entry_count);
 
 	FreeTinyMap(map);
-	printf("\n");
+}
+
+static void test_hashmaps() {
+	run_test(map_simple_put_retrieve);
+	run_test(map_string_key);
+	run_test(map_string_key_and_nuke);
+	run_test(map_string_hash_and_nuke);
+	run_test(map_retains_entries);
+	// TODO: test nukes...
 }
 
 int main(int argc, char* argv[]) {
