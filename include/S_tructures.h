@@ -32,8 +32,8 @@ typedef struct {
 
 /// A generic iterator over `St*` datastructures.
 typedef struct StIterator {
-	bool (*const next)(struct StIterator*);
-	void *const source, *bucket, *data;
+	bool (*next)(struct StIterator*);
+	void *source, *bucket, *data;
 	int64_t aux;
 } StIterator;
 
