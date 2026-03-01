@@ -37,16 +37,12 @@ typedef struct StIterator {
 	int64_t aux;
 } StIterator;
 
-#define ST_MAP_FOREACH(map, iter)                                              \
-	for (StIterator iter = StMapIter(map); StIterNext(&(iter));)
+#define ST_MAP_FOREACH(map, iter) for (StIterator iter = StMapIter(map); StIterNext(&(iter));)
 
 #if __STDC_VERSION__ >= 201112L
 
-#define ST_ITER(container)                                                     \
-	(_Generic(*(container), StTinyMap: StMapIter)(container))
-
-#define ST_FOREACH(container, iter)                                            \
-	for (StIterator iter = ST_ITER(container); StIterNext(&(iter));)
+#define ST_ITER(container) (_Generic(*(container), StTinyMap: StMapIter)(container))
+#define ST_FOREACH(container, iter) for (StIterator iter = ST_ITER(container); StIterNext(&(iter));)
 
 #endif
 
@@ -68,8 +64,7 @@ void FreeTinyMap(StTinyMap* this);
 ///
 /// This also returns the resulting bucket in case you need to set a cleanup
 /// function.
-StTinyBucket*
-StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size);
+StTinyBucket* StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size);
 
 /// Find the bucket by input key, or return `NULL` if there is none.
 StTinyBucket* StMapFind(const StTinyMap* this, StTinyKey key);
@@ -111,10 +106,10 @@ bool StIterNext(StIterator* iter);
 
 #ifndef StLog
 #include <stdio.h>
-#define StLog(...)                                                             \
-	do {                                                                   \
-		fprintf(stdout, "[S_tr]: %c" __VA_ARGS__, '\n');               \
-		fflush(stdout);                                                \
+#define StLog(...)                                                                                 \
+	do {                                                                                       \
+		fprintf(stdout, "[S_tr]: %c" __VA_ARGS__, '\n');                                   \
+		fflush(stdout);                                                                    \
 	} while (0)
 #endif
 
@@ -133,30 +128,29 @@ ST_NORETURN void StDie()
 
 #endif
 
-#define StOutOfJuice()                                                         \
-	do {                                                                   \
-		StLog("Out of memory!!!");                                     \
-		StDie();                                                       \
+#define StOutOfJuice()                                                                             \
+	do {                                                                                       \
+		StLog("Out of memory!!!");                                                         \
+		StDie();                                                                           \
 	} while (0)
 
-#define StCheckedAlloc(var, size)                                              \
-	do {                                                                   \
-		(var) = StAlloc((size));                                       \
-		if (!(var))                                                    \
-			StOutOfJuice();                                        \
+#define StCheckedAlloc(var, size)                                                                  \
+	do {                                                                                       \
+		(var) = StAlloc((size));                                                           \
+		if (!(var))                                                                        \
+			StOutOfJuice();                                                            \
 	} while (0)
 
 #endif
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
-#define ST_MAKE_MAP_GET(suffix, type)                                          \
-	type StMapGet##suffix(const StTinyMap* this, StTinyKey key) {          \
-		StTinyBucket* bucket = StMapFind(this, key);                   \
-		return bucket ? *(type*)bucket->data : 0;                      \
+#define ST_MAKE_MAP_GET(suffix, type)                                                              \
+	type StMapGet##suffix(const StTinyMap* this, StTinyKey key) {                              \
+		StTinyBucket* bucket = StMapFind(this, key);                                       \
+		return bucket ? *(type*)bucket->data : 0;                                          \
 	}
 #else
-#define ST_MAKE_MAP_GET(suffix, type)                                          \
-	type StMapGet##suffix(const StTinyMap*, StTinyKey)
+#define ST_MAKE_MAP_GET(suffix, type) type StMapGet##suffix(const StTinyMap*, StTinyKey)
 #endif
 
 void* StMapGet(const StTinyMap* this, StTinyKey key)
@@ -185,8 +179,7 @@ static const StTinyKey StShuffleKey(const StTinyKey key) {
 	return key ^ (key >> (4 * sizeof(key)));
 }
 
-static StTinyBucket*
-StNewTinyBucket(StTinyKey key, const void* data, int size) {
+static StTinyBucket* StNewTinyBucket(StTinyKey key, const void* data, int size) {
 	if (size < 1) { // TODO: bar behind a debug build check?
 		StLog("Requested bucket size 0; catching on fire");
 		return NULL;
@@ -267,8 +260,7 @@ void FreeTinyMap(StTinyMap* this) {
 	StFree(this);
 }
 
-StTinyBucket*
-StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size) {
+StTinyBucket* StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size) {
 	int idx = StKey2Idx(key);
 	if (!this->buckets[idx]) {
 		this->buckets[idx] = StNewTinyBucket(key, data, size);

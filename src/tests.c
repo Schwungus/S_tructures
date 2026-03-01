@@ -35,13 +35,13 @@ static void _run_test(const char* name, void (*fn)()) {
 	fflush(stdout);
 }
 
-#define assert_eq(a, b)                                                        \
-	do {                                                                   \
-		if ((a) == (b))                                                \
-			break;                                                 \
-		fprintf(stdout, "'%s' == '%s'\n", (#a), (#b));                 \
-		fprintf(stdout, "FAIL: line %d\n", __LINE__);                  \
-		fflush(stdout), exit(EXIT_FAILURE);                            \
+#define assert_eq(a, b)                                                                            \
+	do {                                                                                       \
+		if ((a) == (b))                                                                    \
+			break;                                                                     \
+		fprintf(stdout, "'%s' == '%s'\n", (#a), (#b));                                     \
+		fprintf(stdout, "FAIL: line %d\n", __LINE__);                                      \
+		fflush(stdout), exit(EXIT_FAILURE);                                                \
 	} while (0)
 
 static void map_simple_put_retrieve() {
