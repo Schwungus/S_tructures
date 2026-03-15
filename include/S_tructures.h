@@ -22,7 +22,7 @@ typedef struct StTinyBucket {
 	StTinyKey key;
 	void *data, (*cleanup)(void*);
 	struct StTinyBucket* next;
-	size_t size;
+	uint64_t size;
 } StTinyBucket;
 
 /// A tiny hashmap-like structure indexed with 8-byte keys.
@@ -60,7 +60,7 @@ StTinyMap* NewTinyMap();
 void FreeTinyMap(StTinyMap* this);
 
 /// Returns the amount of key-value pairs inside this tiny-map.
-size_t StMapLength(StTinyMap* this);
+uint64_t StMapLength(StTinyMap* this);
 
 /// Insert data into the tinymap. Allocates a chunk of memory and copies data
 /// from input.
@@ -263,8 +263,8 @@ void FreeTinyMap(StTinyMap* this) {
 	StFree(this);
 }
 
-size_t StMapLength(StTinyMap* this) {
-	size_t length = 0;
+uint64_t StMapLength(StTinyMap* this) {
+	uint64_t length = 0;
 	ST_FOREACH (this, iter)
 		length++;
 	return length;
