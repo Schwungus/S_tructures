@@ -59,6 +59,9 @@ StTinyMap* NewTinyMap();
 /// Cleanup a `StTinyMap`.
 void FreeTinyMap(StTinyMap* this);
 
+/// Returns the amount of key-value pairs inside this tiny-map.
+size_t StMapLength(StTinyMap* this);
+
 /// Insert data into the tinymap. Allocates a chunk of memory and copies data
 /// from input.
 ///
@@ -258,6 +261,13 @@ void FreeTinyMap(StTinyMap* this) {
 	for (int i = 0; i < ST_TINY_MAP_CAPACITY; i++)
 		FreeBucketChain(this->buckets[i]);
 	StFree(this);
+}
+
+size_t StMapLength(StTinyMap* this) {
+	size_t length = 0;
+	ST_FOREACH (this, iter)
+		length++;
+	return length;
 }
 
 StTinyBucket* StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size) {
