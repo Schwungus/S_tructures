@@ -10,6 +10,7 @@ target_include_directories(S_tructures
     INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 option(S_TRUCTURES_BUILD_TEST "Build the test executable?")
+
 if(S_TRUCTURES_BUILD_TEST)
     set(CMAKE_C_STANDARD 11)
 
@@ -18,7 +19,4 @@ if(S_TRUCTURES_BUILD_TEST)
 
     add_executable(S_tructuresExample ${CMAKE_CURRENT_SOURCE_DIR}/src/example.c)
     target_link_libraries(S_tructuresExample S_tructures)
-endif()
-if(S_TRUCTURES_BUILD_TEST AND MSVC AND ${CMAKE_BUILD_TYPE} STREQUAL Debug)
-    target_compile_options(S_tructuresTest PRIVATE /fsanitize=address)
 endif()
