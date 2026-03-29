@@ -285,18 +285,15 @@ TinyBucket* TinyMapPut(TinyMap* this, TinyKey key, const void* data, int size) {
 	}
 
 	TinyBucket* bucket = this->buckets[idx];
-	if (bucket->key == key)
-		goto edit;
-	while (bucket->next) {
-		if (bucket->key == key)
-			goto edit;
-		bucket = bucket->next;
+	while (bucket->key != key) {
+		if (bucket->next) {
+			bucket = bucket->next;
+		} else {
+			bucket->next = StNewTinyBucket(key, data, size);
+			return bucket->next;
+		}
 	}
 
-	bucket->next = StNewTinyBucket(key, data, size);
-	return bucket->next;
-
-edit:
 	if (bucket->size == size) {
 		StCleanupBucket(bucket);
 		StMemcpy(bucket->data, data, size);
