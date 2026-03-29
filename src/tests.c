@@ -78,11 +78,11 @@ static void map_string_hash_and_nuke() {
 	TinyMap* map = MakeTinyMap();
 	int32_t data = 67;
 
-	TinyMapPut(map, StHashStr("SIX SEVEN"), &data, sizeof(data));
-	assert_eq(TinyMapGetI32(map, StHashStr("SIX SEVEN")), 67);
+	TinyDictPut(map, "SIX SEVEN", &data, sizeof(data));
+	assert_eq(TinyDictGetI32(map, "SIX SEVEN"), 67);
 
-	TinyMapErase(map, StHashStr("SIX SEVEN"));
-	assert_eq(TinyMapGet(map, StHashStr("SIX SEVEN")), NULL);
+	TinyDictErase(map, "SIX SEVEN");
+	assert_eq(TinyDictGet(map, "SIX SEVEN"), NULL);
 
 	FreeTinyMap(map);
 }
@@ -108,11 +108,11 @@ static void map_overwrites_values_on_put() {
 
 	const int32_t d1 = 67;
 	TinyDictPut(map, "key", &d1, sizeof(d1));
-	assert_eq(d1, TinyMapGetI32(map, StHashStr("key")));
+	assert_eq(d1, TinyDictGetI32(map, "key"));
 
 	const int64_t d2 = 69;
 	TinyDictPut(map, "key", &d2, sizeof(d2));
-	assert_eq(d2, TinyMapGetI32(map, StHashStr("key")));
+	assert_eq(d2, TinyDictGetI32(map, "key"));
 
 	FreeTinyMap(map);
 }

@@ -88,6 +88,9 @@ void* TinyMapGet(const TinyMap* this, TinyKey key);
 /// Free the bucket and the data associated with a key.
 void TinyMapErase(TinyMap* this, TinyKey key);
 
+/// An alias for `TinyMapErase` which accepts string keys and hashes them for you.
+#define TinyDictErase(this, key) TinyMapErase(this, StHashStr(key))
+
 /// Create an iterator over the values of a tiny-map.
 ///
 /// Pointer-cast and dereference `.data` to get the value of the current entry.
@@ -164,9 +167,15 @@ ST_NORETURN void StDie()
 	type TinyMapGet##suffix(const TinyMap* this, TinyKey key) {                                \
 		const void* data = TinyMapGet(this, key);                                          \
 		return data ? *(type*)data : 0;                                                    \
+	}                                                                                          \
+                                                                                                   \
+	type TinyDictGet##suffix(const TinyMap* this, const char* key) {                           \
+		return TinyMapGet##suffix(this, StHashStr(key));                                   \
 	}
 #else
-#define ST_MAKE_MAP_GET(suffix, type) type TinyMapGet##suffix(const TinyMap*, TinyKey)
+#define ST_MAKE_MAP_GET(suffix, type)                                                              \
+	type TinyMapGet##suffix(const TinyMap*, TinyKey);                                          \
+	type TinyDictGet##suffix(const TinyMap*, const char*);
 #endif
 
 ST_MAKE_MAP_GET(I16, int16_t);
