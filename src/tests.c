@@ -54,16 +54,6 @@ static void map_simple_put_retrieve() {
 	FreeTinyMap(map);
 }
 
-static void map_string_key() {
-	TinyMap* map = MakeTinyMap();
-	int32_t data = 228;
-
-	TinyMapPut(map, StStrKey("Key1"), &data, sizeof(data));
-	assert_eq(TinyMapGetI32(map, StStrKey("Key1")), 228);
-
-	FreeTinyMap(map);
-}
-
 static void map_string_key_and_nuke() {
 	TinyMap* map = MakeTinyMap();
 	int32_t data = 228;
@@ -122,7 +112,6 @@ static void map_overwrites_values_on_put() {
 
 static void test_hashmaps() {
 	run_test(map_simple_put_retrieve);
-	run_test(map_string_key);
 	run_test(map_string_key_and_nuke);
 	run_test(map_string_hash_and_nuke);
 	run_test(map_retains_entries);
