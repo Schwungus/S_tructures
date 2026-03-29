@@ -4,7 +4,7 @@
 int main(int argc, char* argv[]) {
 	(void)argc, (void)argv;
 
-	TinyMap* map = NewTinyMap();
+	TinyMap* map = MakeTinyMap();
 	TinyDictPut(map, "greeting", "hello", strlen("hello!") + 1);
 	TinyDictPut(map, "name", "Bob!", strlen("Bob!") + 1);
 

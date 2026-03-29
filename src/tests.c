@@ -45,7 +45,7 @@ static void _run_test(const char* name, void (*fn)()) {
 	} while (0)
 
 static void map_simple_put_retrieve() {
-	TinyMap* map = NewTinyMap();
+	TinyMap* map = MakeTinyMap();
 	int32_t data = 128;
 
 	TinyMapPut(map, 1337, &data, sizeof(data));
@@ -55,7 +55,7 @@ static void map_simple_put_retrieve() {
 }
 
 static void map_string_key() {
-	TinyMap* map = NewTinyMap();
+	TinyMap* map = MakeTinyMap();
 	int32_t data = 228;
 
 	TinyMapPut(map, StStrKey("Key1"), &data, sizeof(data));
@@ -65,7 +65,7 @@ static void map_string_key() {
 }
 
 static void map_string_key_and_nuke() {
-	TinyMap* map = NewTinyMap();
+	TinyMap* map = MakeTinyMap();
 	int32_t data = 228;
 
 	TinyMapErase(map, StStrKey("Key1"));
@@ -75,7 +75,7 @@ static void map_string_key_and_nuke() {
 }
 
 static void map_string_hash_and_nuke() {
-	TinyMap* map = NewTinyMap();
+	TinyMap* map = MakeTinyMap();
 	int32_t data = 67;
 
 	TinyMapPut(map, StHashStr("SIX SEVEN"), &data, sizeof(data));
@@ -89,7 +89,7 @@ static void map_string_hash_and_nuke() {
 
 static void map_retains_entries() {
 	const int entry_count = 1024;
-	TinyMap* map = NewTinyMap();
+	TinyMap* map = MakeTinyMap();
 
 	const int32_t data = 67;
 	for (int i = 0; i < entry_count; i++)
@@ -104,7 +104,7 @@ static void map_retains_entries() {
 }
 
 static void map_overwrites_values_on_put() {
-	TinyMap* map = NewTinyMap();
+	TinyMap* map = MakeTinyMap();
 
 	const int32_t d1 = 67;
 	TinyDictPut(map, "key", &d1, sizeof(d1));
