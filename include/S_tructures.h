@@ -16,76 +16,79 @@
 
 /// A unique identifier for a tiny-map entry. If you need more than 8 bytes per
 /// key, try squeezing it into a hash using `StHashStr()`.
-typedef uint64_t StTinyKey;
+typedef uint64_t TinyKey;
 
-/// An internal storage cell for `StTinyMap`s. Essentially a singly linked list.
-typedef struct StTinyBucket {
-	StTinyKey key;
+/// An internal storage cell for `TinyMap`s. Essentially a singly linked list.
+typedef struct TinyBucket {
+	TinyKey key;
 	void *data, (*cleanup)(void*);
-	struct StTinyBucket* next;
+	struct TinyBucket* next;
 	size_t size;
-} StTinyBucket;
+} TinyBucket;
 
 /// A tiny hashmap-like structure indexed with 8-byte keys.
 typedef struct {
-	StTinyBucket* buckets[ST_TINY_MAP_CAPACITY];
-} StTinyMap;
+	TinyBucket* buckets[ST_TINY_MAP_CAPACITY];
+} TinyMap;
 
-/// A generic iterator over `St*` datastructures.
-typedef struct StIterator {
-	bool (*next)(struct StIterator*);
+/// A generic iterator over S_tructures-provided datastructures.
+typedef struct StIter {
+	bool (*next)(struct StIter*);
 	void *source, *bucket, *data;
 	int64_t aux;
-} StIterator;
+} StIter;
 
-#define ST_MAP_FOREACH(map, iter) for (StIterator iter = StMapIter(map); StIterNext(&(iter));)
+#define ST_MAP_FOREACH(map, iter) for (StIter iter = TinyMapIter(map); StIterNext(&(iter));)
 
 #if __STDC_VERSION__ >= 201112L
 
-#define ST_ITER(container) (_Generic(*(container), StTinyMap: StMapIter)(container))
-#define ST_FOREACH(container, iter) for (StIterator iter = ST_ITER(container); StIterNext(&(iter));)
+#define ST_ITER(container) (_Generic(*(container), TinyMap: TinyMapIter)(container))
+#define ST_FOREACH(container, iter) for (StIter iter = ST_ITER(container); StIterNext(&(iter));)
 
 #endif
 
 /// Copy up to 8 bytes from a string and return them as an `StTinyKey`.
-StTinyKey StStrKey(const char* s);
+TinyKey StStrKey(const char* s);
 
 /// Hash a string of arbitrary length into an `StTinyKey`.
-StTinyKey StHashStr(const char* s);
+TinyKey StHashStr(const char* s);
 
-/// Create a new `StTinyMap`. Make sure to call `FreeTinyMap` after you're done
+/// Create a new `TinyMap`. Make sure to call `FreeTinyMap` after you're done
 /// with it.
-StTinyMap* MakeTinyMap();
+TinyMap* MakeTinyMap();
 #define NewTinyMap MakeTinyMap
 
-/// Cleanup a `StTinyMap`.
-void FreeTinyMap(StTinyMap* this);
+/// Cleanup a `TinyMap`.
+void FreeTinyMap(TinyMap* this);
 
 /// Returns the amount of key-value pairs inside this tiny-map.
-size_t StMapLength(StTinyMap* this);
+size_t TinyMapLength(TinyMap* this);
 
 /// Insert data into the tinymap. Allocates a chunk of memory and copies data
 /// from input.
 ///
 /// This also returns the resulting bucket in case you need to set a cleanup
 /// function.
-StTinyBucket* StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size);
+TinyBucket* TinyMapPut(TinyMap* this, TinyKey key, const void* data, int size);
+
+/// An alias for `TinyMapPut` which accepts string keys and hashes them for you.
+#define TinyDictPut(this, key, data, size) TinyMapPut((this), StHashStr(key), data, size)
 
 /// Find the bucket by input key, or return `NULL` if there is none.
-StTinyBucket* StMapFind(const StTinyMap* this, StTinyKey key);
+TinyBucket* TinyMapFind(const TinyMap* this, TinyKey key);
 
 /// Free the bucket and the data associated with a key.
-void StMapNuke(StTinyMap* this, StTinyKey key);
+void TinyMapErase(TinyMap* this, TinyKey key);
 
 /// Create an iterator over the values of a tiny-map.
 ///
 /// Pointer-cast and dereference `.data` to get the value of the current entry.
-/// Cast `.bucket` to `StTinyBucket` to set/unset a cleanup function.
-StIterator StMapIter(void* this);
+/// Cast `.bucket` to `TinyBucket` to set/unset a cleanup function.
+StIter TinyMapIter(void* this);
 
 /// Return true and advance if there is an entry available. Return false and
 /// null `.data` otherwise.
-bool StIterNext(StIterator* iter);
+bool StIterNext(StIter* iter);
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
 
@@ -150,18 +153,18 @@ ST_NORETURN void StDie()
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
 #define ST_MAKE_MAP_GET(suffix, type)                                                              \
-	type StMapGet##suffix(const StTinyMap* this, StTinyKey key) {                              \
-		StTinyBucket* bucket = StMapFind(this, key);                                       \
+	type TinyMapGet##suffix(const TinyMap* this, TinyKey key) {                                \
+		TinyBucket* bucket = TinyMapFind(this, key);                                       \
 		return bucket ? *(type*)bucket->data : 0;                                          \
 	}
 #else
-#define ST_MAKE_MAP_GET(suffix, type) type StMapGet##suffix(const StTinyMap*, StTinyKey)
+#define ST_MAKE_MAP_GET(suffix, type) type TinyMapGet##suffix(const TinyMap*, TinyKey)
 #endif
 
-void* StMapGet(const StTinyMap* this, StTinyKey key)
+void* TinyMapGet(const TinyMap* this, TinyKey key)
 #ifdef S_TRUCTURES_IMPLEMENTATION
 {
-	StTinyBucket* bucket = StMapFind(this, key);
+	TinyBucket* bucket = TinyMapFind(this, key);
 	return bucket ? bucket->data : NULL;
 }
 #else
@@ -180,17 +183,17 @@ ST_MAKE_MAP_GET(U64, uint64_t);
 #ifdef S_TRUCTURES_IMPLEMENTATION
 
 #define StKey2Idx(key) ((ST_TINY_MAP_CAPACITY - 1) & StShuffleKey(key))
-static const StTinyKey StShuffleKey(const StTinyKey key) {
+static const TinyKey StShuffleKey(const TinyKey key) {
 	return key ^ (key >> (4 * sizeof(key)));
 }
 
-static StTinyBucket* StNewTinyBucket(StTinyKey key, const void* data, int size) {
+static TinyBucket* StNewTinyBucket(TinyKey key, const void* data, int size) {
 	if (size < 1) { // TODO: bar behind a debug build check?
 		StLog("Requested bucket size 0; catching on fire");
 		return NULL;
 	}
 
-	StTinyBucket* this = NULL;
+	TinyBucket* this = NULL;
 	StCheckedAlloc(this, sizeof(*this));
 	this->cleanup = NULL, this->next = NULL, this->key = key;
 	this->size = size, this->data = NULL;
@@ -199,17 +202,17 @@ static StTinyBucket* StNewTinyBucket(StTinyKey key, const void* data, int size) 
 	return this;
 }
 
-StTinyKey StStrKey(const char* s) {
-	static char buf[sizeof(StTinyKey)] = {0};
+TinyKey StStrKey(const char* s) {
+	static char buf[sizeof(TinyKey)] = {0};
 	if (!s)
 		return 0;
 	for (int i = 0; i < sizeof(buf); i++)
 		if (!s[i]) {
 			StMemcpy(buf, s, i);
 			StMemset(buf + i, 0xFF, sizeof(buf) - i);
-			return *(StTinyKey*)buf;
+			return *(TinyKey*)buf;
 		}
-	return *(StTinyKey*)s;
+	return *(TinyKey*)s;
 }
 
 // clang-format off
@@ -220,31 +223,31 @@ StTinyKey StStrKey(const char* s) {
 
 // clang-format on
 
-#define ST_FNV_OFFSET ((StTinyKey)0xcbf29ce484222325)
-#define ST_FNV_PRIME ((StTinyKey)0x00000100000001b3)
+#define ST_FNV_OFFSET ((TinyKey)0xcbf29ce484222325)
+#define ST_FNV_PRIME ((TinyKey)0x00000100000001b3)
 
-StTinyKey StHashStr(const char* s) {
-	StTinyKey key = ST_FNV_OFFSET;
+TinyKey StHashStr(const char* s) {
+	TinyKey key = ST_FNV_OFFSET;
 	for (const char* c = s; s && *c; c++) {
-		key ^= (StTinyKey)(uint8_t)*c;
+		key ^= (TinyKey)(uint8_t)*c;
 		key *= ST_FNV_PRIME;
 	}
 	return key;
 }
 
-StTinyMap* NewTinyMap() {
-	StTinyMap* this = NULL;
+TinyMap* NewTinyMap() {
+	TinyMap* this = NULL;
 	StCheckedAlloc(this, sizeof(*this));
 	StMemset((void*)this->buckets, 0, sizeof(this->buckets));
 	return this;
 }
 
-static void StCleanupBucket(StTinyBucket* this) {
+static void StCleanupBucket(TinyBucket* this) {
 	if (this->cleanup && this->data)
 		this->cleanup(this->data);
 }
 
-static void FreeSingleBucket(StTinyBucket* this) {
+static void FreeSingleBucket(TinyBucket* this) {
 	if (this->data) {
 		StCleanupBucket(this);
 		StFree(this->data);
@@ -254,14 +257,14 @@ static void FreeSingleBucket(StTinyBucket* this) {
 	StFree(this);
 }
 
-static void FreeBucketChain(StTinyBucket* this) {
+static void FreeBucketChain(TinyBucket* this) {
 	if (this) {
 		FreeBucketChain(this->next);
 		FreeSingleBucket(this);
 	}
 }
 
-void FreeTinyMap(StTinyMap* this) {
+void FreeTinyMap(TinyMap* this) {
 	if (!this)
 		return;
 	for (int i = 0; i < ST_TINY_MAP_CAPACITY; i++)
@@ -269,21 +272,21 @@ void FreeTinyMap(StTinyMap* this) {
 	StFree(this);
 }
 
-size_t StMapLength(StTinyMap* this) {
+size_t TinyMapLength(TinyMap* this) {
 	size_t length = 0;
 	ST_FOREACH (this, iter)
 		length++;
 	return length;
 }
 
-StTinyBucket* StMapPut(StTinyMap* this, StTinyKey key, const void* data, int size) {
+TinyBucket* TinyMapPut(TinyMap* this, TinyKey key, const void* data, int size) {
 	int idx = StKey2Idx(key);
 	if (!this->buckets[idx]) {
 		this->buckets[idx] = StNewTinyBucket(key, data, size);
 		return this->buckets[idx];
 	}
 
-	StTinyBucket* bucket = this->buckets[idx];
+	TinyBucket* bucket = this->buckets[idx];
 	if (bucket->key == key)
 		goto edit;
 	while (bucket->next) {
@@ -306,8 +309,8 @@ edit:
 	return bucket;
 }
 
-StTinyBucket* StMapFind(const StTinyMap* this, StTinyKey key) {
-	StTinyBucket* bucket = this->buckets[StKey2Idx(key)];
+TinyBucket* TinyMapFind(const TinyMap* this, TinyKey key) {
+	TinyBucket* bucket = this->buckets[StKey2Idx(key)];
 	while (bucket) {
 		if (bucket->key == key)
 			return bucket;
@@ -316,9 +319,9 @@ StTinyBucket* StMapFind(const StTinyMap* this, StTinyKey key) {
 	return NULL;
 }
 
-void StMapNuke(StTinyMap* this, StTinyKey key) {
+void TinyMapErase(TinyMap* this, TinyKey key) {
 	int idx = StKey2Idx(key);
-	StTinyBucket* bucket = this->buckets[idx];
+	TinyBucket* bucket = this->buckets[idx];
 	if (!bucket)
 		return;
 	if (bucket->key == key) {
@@ -336,31 +339,31 @@ void StMapNuke(StTinyMap* this, StTinyKey key) {
 	}
 }
 
-static bool StMapIterNext(StIterator* iter) {
+static bool TinyMapIterNext(StIter* iter) {
 	if (iter->aux >= ST_TINY_MAP_CAPACITY)
 		return false;
 
 	if (iter->bucket)
-		iter->bucket = ((StTinyBucket*)iter->bucket)->next;
+		iter->bucket = ((TinyBucket*)iter->bucket)->next;
 	while (!iter->bucket) {
 		if (++iter->aux >= ST_TINY_MAP_CAPACITY)
 			return false;
-		iter->bucket = ((StTinyMap*)iter->source)->buckets[iter->aux];
+		iter->bucket = ((TinyMap*)iter->source)->buckets[iter->aux];
 	}
 
-	iter->data = iter->bucket ? ((StTinyBucket*)iter->bucket)->data : NULL;
+	iter->data = iter->bucket ? ((TinyBucket*)iter->bucket)->data : NULL;
 	return true;
 }
 
-StIterator StMapIter(void* this) {
-	return (StIterator){
-		.next = StMapIterNext,
+StIter TinyMapIter(void* this) {
+	return (StIter){
+		.next = TinyMapIterNext,
 		.source = this,
 		.aux = -1,
 	};
 }
 
-bool StIterNext(StIterator* iter) {
+bool StIterNext(StIter* iter) {
 	if (iter->source && iter->next && iter->next(iter))
 		return true;
 	iter->data = iter->bucket = NULL;

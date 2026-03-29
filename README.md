@@ -34,9 +34,9 @@ And you're ready to go! Just `#include "S_tructures.h"` in your code, and have f
 For now, we only have "tiny" hashmaps to offer. Here's a quick appetizer to get you started:
 
 ```c
-StTinyMap* map = NewTinyMap();
-StMapPut(map, StHashStr("greeting"), "hello", strlen("hello!") + 1);
-StMapPut(map, StHashStr("name"), "Bob!", strlen("Bob!") + 1);
+TinyMap* map = MakeTinyMap();
+TinyMapPut(map, StHashStr("greeting"), "hello", strlen("hello!") + 1);
+TinyMapPut(map, StHashStr("name"), "Bob!", strlen("Bob!") + 1);
 
 ST_FOREACH (map, it)
     printf("%s\n", (char*)it.data);
@@ -83,7 +83,7 @@ In your `S_tructures.c`, you can customize the memory allocator by defining `StA
     } while (0)
 ```
 
-### `StTinyBucket` cleanup function
+### `TinyBucket` cleanup function
 
 You can set a custom cleanup function to call before deallocating data from a bucket. For example:
 
@@ -93,10 +93,10 @@ static void CleanupTexture(void* ptr) {
     UnloadTexture(*(Texture*)ptr);
 }
 
-StTinyMap* map = NewTinyMap();
+TinyMap* map = MakeTinyMap();
 
 Texture tx = LoadTexture("...");
-StTinyBucket* bucket = StMapPut(map, StStrKey("MyTex"), tx, sizeof(tx));
+TinyBucket* bucket = StMapPut(map, StStrKey("MyTex"), tx, sizeof(tx));
 bucket->cleanup = CleanupTexture;
 
 FreeTinyMap(map); // `CleanupTexture` will be called with a pointer to `tx` as the argument

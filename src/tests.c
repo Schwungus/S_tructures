@@ -45,59 +45,59 @@ static void _run_test(const char* name, void (*fn)()) {
 	} while (0)
 
 static void map_simple_put_retrieve() {
-	StTinyMap* map = NewTinyMap();
+	TinyMap* map = NewTinyMap();
 	int32_t data = 128;
 
-	StMapPut(map, 1337, &data, sizeof(data));
-	assert_eq(StMapGetI32(map, 1337), 128);
+	TinyMapPut(map, 1337, &data, sizeof(data));
+	assert_eq(TinyMapGetI32(map, 1337), 128);
 
 	FreeTinyMap(map);
 }
 
 static void map_string_key() {
-	StTinyMap* map = NewTinyMap();
+	TinyMap* map = NewTinyMap();
 	int32_t data = 228;
 
-	StMapPut(map, StStrKey("Key1"), &data, sizeof(data));
-	assert_eq(StMapGetI32(map, StStrKey("Key1")), 228);
+	TinyMapPut(map, StStrKey("Key1"), &data, sizeof(data));
+	assert_eq(TinyMapGetI32(map, StStrKey("Key1")), 228);
 
 	FreeTinyMap(map);
 }
 
 static void map_string_key_and_nuke() {
-	StTinyMap* map = NewTinyMap();
+	TinyMap* map = NewTinyMap();
 	int32_t data = 228;
 
-	StMapNuke(map, StStrKey("Key1"));
-	assert_eq(StMapGet(map, StStrKey("Key1")), NULL);
+	TinyMapErase(map, StStrKey("Key1"));
+	assert_eq(TinyMapGet(map, StStrKey("Key1")), NULL);
 
 	FreeTinyMap(map);
 }
 
 static void map_string_hash_and_nuke() {
-	StTinyMap* map = NewTinyMap();
+	TinyMap* map = NewTinyMap();
 	int32_t data = 67;
 
-	StMapPut(map, StHashStr("SIX SEVEN"), &data, sizeof(data));
-	assert_eq(StMapGetI32(map, StHashStr("SIX SEVEN")), 67);
+	TinyMapPut(map, StHashStr("SIX SEVEN"), &data, sizeof(data));
+	assert_eq(TinyMapGetI32(map, StHashStr("SIX SEVEN")), 67);
 
-	StMapNuke(map, StHashStr("SIX SEVEN"));
-	assert_eq(StMapGet(map, StHashStr("SIX SEVEN")), NULL);
+	TinyMapErase(map, StHashStr("SIX SEVEN"));
+	assert_eq(TinyMapGet(map, StHashStr("SIX SEVEN")), NULL);
 
 	FreeTinyMap(map);
 }
 
 static void map_retains_entries() {
 	const int entry_count = 1024;
-	StTinyMap* map = NewTinyMap();
+	TinyMap* map = NewTinyMap();
 
 	const int32_t data = 67;
 	for (int i = 0; i < entry_count; i++)
-		StMapPut(map, i, &data, sizeof(data));
+		TinyMapPut(map, i, &data, sizeof(data));
 
 	int iter_count = 0;
 	ST_FOREACH (map, it)
-		assert_eq(StMapGetI32(map, iter_count++), data);
+		assert_eq(TinyMapGetI32(map, iter_count++), data);
 	assert_eq(iter_count, entry_count);
 
 	FreeTinyMap(map);
