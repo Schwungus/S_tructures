@@ -55,7 +55,8 @@ StTinyKey StHashStr(const char* s);
 
 /// Create a new `StTinyMap`. Make sure to call `FreeTinyMap` after you're done
 /// with it.
-StTinyMap* NewTinyMap();
+StTinyMap* MakeTinyMap();
+#define NewTinyMap MakeTinyMap
 
 /// Cleanup a `StTinyMap`.
 void FreeTinyMap(StTinyMap* this);
