@@ -103,12 +103,27 @@ static void map_retains_entries() {
 	FreeTinyMap(map);
 }
 
+static void map_overwrites_values_on_put() {
+	TinyMap* map = NewTinyMap();
+
+	const int32_t d1 = 67;
+	TinyDictPut(map, "key", &d1, sizeof(d1));
+	assert_eq(d1, TinyMapGetI32(map, StHashStr("key")));
+
+	const int64_t d2 = 69;
+	TinyDictPut(map, "key", &d2, sizeof(d2));
+	assert_eq(d2, TinyMapGetI32(map, StHashStr("key")));
+
+	FreeTinyMap(map);
+}
+
 static void test_hashmaps() {
 	run_test(map_simple_put_retrieve);
 	run_test(map_string_key);
 	run_test(map_string_key_and_nuke);
 	run_test(map_string_hash_and_nuke);
 	run_test(map_retains_entries);
+	run_test(map_overwrites_values_on_put);
 	// TODO: test nukes...
 }
 

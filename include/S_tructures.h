@@ -294,12 +294,14 @@ TinyBucket* TinyMapPut(TinyMap* this, TinyKey key, const void* data, int size) {
 		}
 	}
 
-	if (bucket->size == size) {
-		StCleanupBucket(bucket);
-		StMemcpy(bucket->data, data, size);
-	} else {
-		StLog("Your bucket doesn't store this much bruv");
+	StCleanupBucket(bucket);
+	if (bucket->size != size) {
+		if (bucket->data)
+			StFree(bucket->data);
+		bucket->data = StAlloc(size);
+		bucket->size = size;
 	}
+	StMemcpy(bucket->data, data, size);
 
 	return bucket;
 }
