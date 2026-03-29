@@ -238,10 +238,14 @@ StTinyMap* NewTinyMap() {
 	return this;
 }
 
+static void StCleanupBucket(StTinyBucket* this) {
+	if (this->cleanup && this->data)
+		this->cleanup(this->data);
+}
+
 static void FreeSingleBucket(StTinyBucket* this) {
 	if (this->data) {
-		if (this->cleanup)
-			this->cleanup(this->data);
+		StCleanupBucket(this);
 		StFree(this->data);
 		this->data = NULL;
 	}
@@ -291,10 +295,13 @@ StTinyBucket* StMapPut(StTinyMap* this, StTinyKey key, const void* data, int siz
 	return bucket->next;
 
 edit:
-	if (bucket->size == size)
+	if (bucket->size == size) {
+		StCleanupBucket(bucket);
 		StMemcpy(bucket->data, data, size);
-	else
+	} else {
 		StLog("Your bucket doesn't store this much bruv");
+	}
+
 	return bucket;
 }
 
