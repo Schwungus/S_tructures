@@ -77,6 +77,14 @@ TinyBucket* TinyMapPut(TinyMap* this, TinyKey key, const void* data, int size);
 /// Find the bucket by input key, or return `NULL` if there is none.
 TinyBucket* TinyMapFind(const TinyMap* this, TinyKey key);
 
+/// Returns a pointer to an entry's data, if any. Spits out a `NULL` otherwise.
+///
+/// If you need to check the entry's actual size, use the full-form `TinyMapFind`.
+void* TinyMapGet(const TinyMap* this, TinyKey key);
+
+/// An alias for `TinyMapGet` which accepts string keys and hashes them for you.
+#define TinyDictGet(this, key) TinyMapGet((this), StHashStr(key))
+
 /// Free the bucket and the data associated with a key.
 void TinyMapErase(TinyMap* this, TinyKey key);
 
@@ -154,21 +162,11 @@ ST_NORETURN void StDie()
 #ifdef S_TRUCTURES_IMPLEMENTATION
 #define ST_MAKE_MAP_GET(suffix, type)                                                              \
 	type TinyMapGet##suffix(const TinyMap* this, TinyKey key) {                                \
-		TinyBucket* bucket = TinyMapFind(this, key);                                       \
-		return bucket ? *(type*)bucket->data : 0;                                          \
+		const void* data = TinyMapGet(this, key);                                          \
+		return data ? *(type*)data : 0;                                                    \
 	}
 #else
 #define ST_MAKE_MAP_GET(suffix, type) type TinyMapGet##suffix(const TinyMap*, TinyKey)
-#endif
-
-void* TinyMapGet(const TinyMap* this, TinyKey key)
-#ifdef S_TRUCTURES_IMPLEMENTATION
-{
-	TinyBucket* bucket = TinyMapFind(this, key);
-	return bucket ? bucket->data : NULL;
-}
-#else
-	;
 #endif
 
 ST_MAKE_MAP_GET(I16, int16_t);
@@ -317,6 +315,11 @@ TinyBucket* TinyMapFind(const TinyMap* this, TinyKey key) {
 		bucket = bucket->next;
 	}
 	return NULL;
+}
+
+void* TinyMapGet(const TinyMap* this, TinyKey key) {
+	TinyBucket* bucket = TinyMapFind(this, key);
+	return bucket ? bucket->data : NULL;
 }
 
 void TinyMapErase(TinyMap* this, TinyKey key) {
