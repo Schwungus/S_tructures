@@ -68,6 +68,9 @@ static void map_string_key_and_nuke() {
 	TinyMap* map = MakeTinyMap();
 	int32_t data = 228;
 
+	TinyMapPut(map, StStrKey("Key1"), &data, sizeof(data));
+	assert_eq(TinyMapGetI32(map, StStrKey("Key1")), data);
+
 	TinyMapErase(map, StStrKey("Key1"));
 	assert_eq(TinyMapGet(map, StStrKey("Key1")), NULL);
 
