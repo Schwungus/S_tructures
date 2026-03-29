@@ -89,15 +89,15 @@ You can set a custom cleanup function to call before deallocating data from a bu
 
 ```c
 static void CleanupTexture(void* ptr) {
-    // Pointer-cast & dereference since the function takes a value of type `Texture`:
+    // pointer-cast & dereference since the function takes a value of type `Texture`:
     UnloadTexture(*(Texture*)ptr);
 }
 
 TinyMap* map = MakeTinyMap();
 
 Texture tx = LoadTexture("...");
-TinyBucket* bucket = StMapPut(map, StStrKey("MyTex"), tx, sizeof(tx));
+TinyBucket* bucket = TinyDictPut(map, "MyTex", &tx, sizeof(tx)); // copies `tx` into `map`
 bucket->cleanup = CleanupTexture;
 
-FreeTinyMap(map); // `CleanupTexture` will be called with a pointer to `tx` as the argument
+FreeTinyMap(map); // `CleanupTexture` will be called with a pointer to texture data as the argument
 ```
