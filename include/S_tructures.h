@@ -189,7 +189,7 @@ ST_MAKE_MAP_GET(U64, uint64_t);
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
 
-#define StKey2Idx(key) ((ST_TINY_MAP_CAPACITY - 1) & StShuffleKey(key))
+#define TinyKey2Idx(key) ((size_t)((ST_TINY_MAP_CAPACITY - 1) & StShuffleKey(key)))
 static const TinyKey StShuffleKey(const TinyKey key) {
 	return key ^ (key >> (4 * sizeof(key)));
 }
@@ -275,7 +275,7 @@ size_t TinyMapLength(TinyMap* this) {
 }
 
 TinyBucket* TinyMapPut(TinyMap* this, TinyKey key, const void* data, int size) {
-	int idx = StKey2Idx(key);
+	size_t idx = TinyKey2Idx(key);
 	if (!this->buckets[idx]) {
 		this->buckets[idx] = StNewTinyBucket(key, data, size);
 		return this->buckets[idx];
@@ -304,7 +304,7 @@ TinyBucket* TinyMapPut(TinyMap* this, TinyKey key, const void* data, int size) {
 }
 
 TinyBucket* TinyMapFind(const TinyMap* this, TinyKey key) {
-	TinyBucket* bucket = this->buckets[StKey2Idx(key)];
+	TinyBucket* bucket = this->buckets[TinyKey2Idx(key)];
 	while (bucket) {
 		if (bucket->key == key)
 			return bucket;
@@ -319,7 +319,7 @@ void* TinyMapGet(const TinyMap* this, TinyKey key) {
 }
 
 void TinyMapErase(TinyMap* this, TinyKey key) {
-	int idx = StKey2Idx(key);
+	size_t idx = TinyKey2Idx(key);
 	TinyBucket* bucket = this->buckets[idx];
 	if (!bucket)
 		return;
@@ -369,6 +369,6 @@ bool StIterNext(StIter* iter) {
 	return false;
 }
 
-#undef StKey2Idx
+#undef TinyKey2Idx
 
 #endif
