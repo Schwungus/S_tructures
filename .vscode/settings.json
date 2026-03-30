@@ -1,5 +1,5 @@
 {
-    "editor.formatOnSave": false,
+    "editor.formatOnSave": true,
     "editor.formatOnSaveMode": "file",
     "C_Cpp.intelliSenseEngine": "disabled",
     "clangd.enable": true,
@@ -13,10 +13,10 @@
         ".cache": true
     },
     "files.associations": {
-        "*.h": "c"
+        "*.h": "c",
+        ".clang*": "yaml"
     },
     "[c]": {
-        "editor.formatOnSave": true,
         "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
     }
 }
