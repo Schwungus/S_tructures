@@ -222,23 +222,14 @@ TinyKey StStrKey(const char* s) {
 	return *(TinyKey*)s;
 }
 
-// clang-format off
-
 // Thanks:
-// 1. <https://github.com/toggins/Klawiatura/blob/bf6d4a12877ee850ea2c52ae5e976fbf5f787aee/src/K_memory.c#L5>
+// 1. <https://github.com/toggins/Klawiatura/blob/bf6d4a12877ee850ea2c52ae5e976fbf5f787aee/src/K_memory.c#L5>
 // 2. <https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function>
 
-// clang-format on
-
-#define ST_FNV_OFFSET ((TinyKey)0xcbf29ce484222325)
-#define ST_FNV_PRIME ((TinyKey)0x00000100000001b3)
-
 TinyKey StHashStr(const char* s) {
-	TinyKey key = ST_FNV_OFFSET;
-	for (const char* c = s; s && *c; c++) {
-		key ^= (TinyKey)(uint8_t)*c;
-		key *= ST_FNV_PRIME;
-	}
+	TinyKey key = 0xcbf29ce484222325;
+	for (; s && *s; s++)
+		key ^= *(uint8_t*)s, key *= 0x00000100000001b3;
 	return key;
 }
 
