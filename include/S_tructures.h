@@ -170,7 +170,8 @@ ST_NORETURN void StDie()
 	}                                                                                          \
                                                                                                    \
 	type TinyDictGet##suffix(const TinyMap* this, const char* key) {                           \
-		return TinyMapGet##suffix(this, StHashStr(key));                                   \
+		const void* data = TinyMapGet(this, StHashStr(key));                               \
+		return data ? *(type*)data : 0;                                                    \
 	}
 #else
 #define ST_MAKE_MAP_GET(suffix, type)                                                              \
