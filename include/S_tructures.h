@@ -255,12 +255,9 @@ static void StCleanupBucket(TinyBucket* this) {
 }
 
 static void FreeSingleBucket(TinyBucket* this) {
-	if (this->data) {
-		StCleanupBucket(this);
+	StCleanupBucket(this);
+	if (this->data)
 		StFree(this->data);
-		this->data = NULL;
-	}
-	this->next = NULL;
 	StFree(this);
 }
 
