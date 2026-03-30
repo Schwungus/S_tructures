@@ -31,7 +31,7 @@ typedef struct {
 	TinyBucket* buckets[ST_TINY_MAP_CAPACITY];
 } TinyMap;
 
-/// A generic iterator over S_tructures-provided datastructures.
+/// A generic iterator over S_tructures.
 typedef struct StIter {
 	bool (*next)(struct StIter*);
 	void *source, *bucket, *data;
@@ -307,7 +307,7 @@ TinyBucket* TinyMapPut(TinyMap* this, TinyKey key, const void* data, int size) {
 	if (bucket->size != size) {
 		if (bucket->data)
 			StFree(bucket->data);
-		bucket->data = StAlloc(size);
+		StCheckedAlloc(bucket->data, size);
 		bucket->size = size;
 	}
 	StMemcpy(bucket->data, data, size);
