@@ -72,7 +72,7 @@ size_t TinyMapLength(TinyMap* this);
 TinyBucket* TinyMapPut(TinyMap* this, TinyKey key, const void* data, int size);
 
 /// An alias for `TinyMapPut` which accepts string keys and hashes them for you.
-#define TinyDictPut(this, key, data, size) TinyMapPut((this), StHashStr(key), data, size)
+#define TinyDictPut(this, key, data, size) TinyMapPut((this), StHashStr((key)), (data), (size))
 
 /// Find the bucket by input key, or return `NULL` if there is none.
 TinyBucket* TinyMapFind(const TinyMap* this, TinyKey key);
@@ -83,13 +83,13 @@ TinyBucket* TinyMapFind(const TinyMap* this, TinyKey key);
 void* TinyMapGet(const TinyMap* this, TinyKey key);
 
 /// An alias for `TinyMapGet` which accepts string keys and hashes them for you.
-#define TinyDictGet(this, key) TinyMapGet((this), StHashStr(key))
+#define TinyDictGet(this, key) TinyMapGet((this), StHashStr((key)))
 
 /// Free the bucket and the data associated with a key.
 void TinyMapErase(TinyMap* this, TinyKey key);
 
 /// An alias for `TinyMapErase` which accepts string keys and hashes them for you.
-#define TinyDictErase(this, key) TinyMapErase(this, StHashStr(key))
+#define TinyDictErase(this, key) TinyMapErase((this), StHashStr((key)))
 
 /// Create an iterator over the values of a tiny-map.
 ///
