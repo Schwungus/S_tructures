@@ -77,6 +77,9 @@ TinyBucket* TinyMapPut(TinyMap* this, TinyKey key, const void* data, int size);
 /// Find the bucket by input key, or return `NULL` if there is none.
 TinyBucket* TinyMapFind(const TinyMap* this, TinyKey key);
 
+/// An alias for `TinyMapFind` which accepts string keys and hashes them for you.
+#define TinyDictFind(this, key) TinyMapFind((this), StHashStr((key)))
+
 /// Returns a pointer to an entry's data, if any. Spits out a `NULL` otherwise.
 ///
 /// If you need to check the entry's actual size, use the full-form `TinyMapFind`.
