@@ -296,7 +296,7 @@ TinyBucket* TinyMapPut(TinyMap* this, TinyKey key, const void* data, int size) {
 	}
 
 	StCleanupBucket(bucket);
-	if (bucket->size != size) {
+	if (bucket->size != (size_t)size) {
 		if (bucket->data)
 			StFree(bucket->data);
 		StCheckedAlloc(bucket->data, size);
