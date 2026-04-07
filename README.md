@@ -1,6 +1,6 @@
 # S_tructures
 
-Useful dynamic data structures for plain C. Currently only implements hashmaps.
+Useful dynamic data structures for plain C. Currently only implements tiny-hashmaps.
 
 ## Basic usage
 
@@ -29,7 +29,7 @@ Then add a `S_tructures.c` file with the library's implementation details:
 
 And you're ready to go! Just `#include "S_tructures.h"` in your code, and have fun using these crutches.
 
-### Tiny-map hashmaps
+### Tiny-hashmaps
 
 For now, we only have "tiny" hashmaps to offer. Here's a quick appetizer to get you started:
 
@@ -46,9 +46,22 @@ FreeTinyMap(map), map = NULL;
 
 The tiny hashmaps have the following properties:
 
-1. They don't store the whole key you put in them, only an 8 byte hash. This is also why you need to use `StHashStr` to get a tiny-map-compatible key from a string key.
-2. They don't handle hash collisions, at all, due to the point above. If this issue breaks your program, you should buy a lottery ticket!
-3. They are orderless, i.e. they iterate in a "whatever" order. Don't rely on the order of insertion when doing a for-each over key-value pairs.
+1. Tiny-maps don't store the whole key you put in them, only an 8 byte hash at most. This is also why you need to use `StHashStr` to get a tiny-map-compatible key from a string key.
+2. Tiny-maps don't handle hash collisions, at all, due to the point above. If this issue breaks your program, you should probably buy a lottery ticket!
+3. Values inside tiny-map buckets are dynamically typed. As long as you're handling your data in a sane way, you should be able to pointer-cast `StTinyBucket.data` to anything, without your program hardcrashing. E.g. when `it` is the bucket:
+
+   ```c
+   typedef struct { int x, y; } Enemy;
+
+   void DrawEnemy(Enemy this) { /* ... */ }
+
+   TinyMap* enemies = MakeTinyMap();
+   ST_FOREACH (enemies, it) {
+     DrawEnemy(*(Enemy*)it.data);
+   }
+   ```
+
+4. Iterating over key-value pairs isn't guaranteed to result in the pairs coming in the same order they were inserted.
 
 Take a look into [our testbed](src/tests.c) for an overview of what other things our tiny-map hashmaps implementation can do.
 
@@ -69,18 +82,19 @@ In your `S_tructures.c`, you can customize the memory allocator by defining `StA
 #include "S_tructures.h" // IWYU pragma: keep
 ```
 
+Make sure to define `StAlloc` & `StFree` and `StMemset` & `StMemcpy` in pairs. Doing otherwise will not compile as it's a logic error; i.e. your custom `malloc` implementation should almost always come with its own custom `free` if you get the gist.
+
 ### Custom logger
 
 `StLog` is called when spitting useful error messages, and can be customized as well. Here's how it's defined by default:
 
 ```c
 #include <stdio.h>
-#define StLog(...)                               \
-    do {                                         \
-        fprintf(stdout, "[S_tr]: " __VA_ARGS__); \
-        fprintf(stdout, "\n");                   \
-        fflush(stdout);                          \
-    } while (0)
+#define StLog(...) \
+  do { \
+    fprintf(stdout, "[S_tr]: %c" __VA_ARGS__, '\n'); \
+    fflush(stdout); \
+  } while (0)
 ```
 
 ### `TinyBucket` cleanup function
