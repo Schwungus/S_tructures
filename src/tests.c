@@ -129,6 +129,25 @@ static void map_overwrites_values_on_put() {
 	FreeTinyMap(&map);
 }
 
+static void map_safe_to_reuse() {
+	TinyMap map = {0};
+	const int32_t d = 123;
+
+	TinyDictPut(&map, "hello", &d, sizeof(d));
+	assert_eq(d, TinyDictGetI32(&map, "hello"));
+	assert_eq(1, TinyMapLength(&map));
+
+	FreeTinyMap(&map);
+	assert_eq(0, TinyMapLength(&map));
+
+	TinyDictPut(&map, "hello", &d, sizeof(d));
+	assert_eq(d, TinyDictGetI32(&map, "hello"));
+	assert_eq(1, TinyMapLength(&map));
+
+	FreeTinyMap(&map);
+	assert_eq(0, TinyMapLength(&map));
+}
+
 static void test_hashmaps() {
 	run_test(map_simple_put_retrieve);
 	run_test(map_string_key_and_nuke);
@@ -136,6 +155,7 @@ static void test_hashmaps() {
 	run_test(map_retains_entries);
 	run_test(map_counts_length_correctly);
 	run_test(map_overwrites_values_on_put);
+	run_test(map_safe_to_reuse);
 	// TODO: test nukes...
 }
 
