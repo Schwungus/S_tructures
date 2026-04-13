@@ -21,4 +21,4 @@ IndentCaseLabels: true
 RemoveBracesLLVM: true
 AlignAfterOpenBracket: DontAlign
 SortIncludes: CaseSensitive
-ForEachMacros: [ST_FOREACH, ST_MAP_FOREACH]
+ForEachMacros: [TINY_MAP_FOREACH]

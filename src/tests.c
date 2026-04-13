@@ -89,7 +89,7 @@ static void map_retains_entries() {
 		TinyMapPut(&map, i, &data, sizeof(data));
 
 	size_t iter_count = 0;
-	ST_FOREACH (&map, it)
+	TINY_MAP_FOREACH (&map, it)
 		assert_eq(TinyMapGetI32(&map, iter_count++), data);
 
 	assert_eq(iter_count, real_length);

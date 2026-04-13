@@ -34,6 +34,14 @@ typedef struct {
 	size_t length;
 } TinyMap;
 
+/// An iterator over tiny-maps.
+typedef struct {
+	TinyMap* source;
+	TinyBucket* bucket;
+	size_t bucket_idx;
+	void* data;
+} TinyMapIterator;
+
 #define ST_TINY_D_INITIAL_CAPACITY ((size_t)64)
 #define ST_TINY_D_GROWTH_FACTOR ((size_t)2)
 
@@ -42,21 +50,7 @@ typedef struct {
 	size_t length, capacity, elt_size;
 } TinyDHead;
 
-/// A generic iterator over S_tructures.
-typedef struct StIter {
-	bool (*next)(struct StIter*);
-	void *source, *bucket, *data;
-	int64_t aux;
-} StIter;
-
-#define ST_MAP_FOREACH(map, iter) for (StIter iter = TinyMapIter(map); StIterNext(&(iter));)
-
-#if __STDC_VERSION__ >= 201112L
-
-#define ST_ITER(container) (_Generic(*(container), TinyMap: TinyMapIter)(container))
-#define ST_FOREACH(container, iter) for (StIter iter = ST_ITER(container); StIterNext(&(iter));)
-
-#endif
+#define TINY_MAP_FOREACH(map, it) for (TinyMapIterator it = TinyMapIter((map)); TinyMapNext(&(it));)
 
 /// Copy up to 8 bytes from a string and return them as an `StTinyKey`.
 TinyHash StStrKey(const char* s);
@@ -100,6 +94,16 @@ void TinyMapErase(TinyMap* this, TinyHash hash);
 /// An shorthand for `TinyMapErase` which accepts string keys and hashes them for you.
 #define TinyDictErase(this, hash) TinyMapErase((this), StHashStr((hash)))
 
+/// Creates an iterator over the values of a tiny-map.
+///
+/// Pointer-cast and dereference `.data` to get the value of the current entry. Cast `.bucket` to
+/// `TinyBucket` to set/unset a cleanup function.
+TinyMapIterator TinyMapIter(TinyMap* this);
+
+/// Returns true and advances the iterator if there is an entry available inside the iterable.
+/// Otherwise returns false.
+bool TinyMapNext(TinyMapIterator* iter);
+
 /// Creates a dynamic-array with the specified capacity and element-size.
 void* MakeTinyDPro(size_t capacity, size_t elt_size);
 
@@ -127,16 +131,6 @@ void* TinyDAppendPro(void* this, const void* ref);
 		__typeof__(value) tmp = (value);                                                   \
 		TinyDAppendPro((this), &tmp);                                                      \
 	})
-
-/// Create an iterator over the values of a tiny-map.
-///
-/// Pointer-cast and dereference `.data` to get the value of the current entry.
-/// Cast `.bucket` to `TinyBucket` to set/unset a cleanup function.
-StIter TinyMapIter(void* this);
-
-/// Return true and advance if there is an entry available. Return false and
-/// null `.data` otherwise.
-bool StIterNext(StIter* iter);
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
 
@@ -377,28 +371,26 @@ void TinyMapErase(TinyMap* this, TinyHash hash) {
 	}
 }
 
-static bool TinyMapIterNext(StIter* iter) {
-	if (iter->aux >= ST_TINY_MAP_CAPACITY)
+bool TinyMapNext(TinyMapIterator* iter) {
+	if (iter->bucket_idx > ST_TINY_MAP_CAPACITY)
 		return false;
 
 	if (iter->bucket)
-		iter->bucket = ((TinyBucket*)iter->bucket)->next;
+		iter->bucket = iter->bucket->next;
+
 	while (!iter->bucket) {
-		if (++iter->aux >= ST_TINY_MAP_CAPACITY)
+		iter->bucket = iter->source->buckets[iter->bucket_idx];
+		if (++iter->bucket_idx > ST_TINY_MAP_CAPACITY)
 			return false;
-		iter->bucket = ((TinyMap*)iter->source)->buckets[iter->aux];
 	}
 
-	iter->data = iter->bucket ? ((TinyBucket*)iter->bucket)->data : NULL;
+	iter->data = iter->bucket ? iter->bucket->data : NULL;
+
 	return true;
 }
 
-StIter TinyMapIter(void* this) {
-	return (StIter){
-		.next = TinyMapIterNext,
-		.source = this,
-		.aux = -1,
-	};
+TinyMapIterator TinyMapIter(TinyMap* this) {
+	return (TinyMapIterator){.source = this};
 }
 
 void* MakeTinyDPro(size_t capacity, size_t elt_size) {
@@ -442,13 +434,6 @@ void* TinyDAppendPro(void* this, const void* ref) {
 	TinyDLength(buf)++;
 
 	return buf;
-}
-
-bool StIterNext(StIter* iter) {
-	if (iter->source && iter->next && iter->next(iter))
-		return true;
-	iter->data = iter->bucket = NULL;
-	return false;
 }
 
 #undef TinyKey2Idx

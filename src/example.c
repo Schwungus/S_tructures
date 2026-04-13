@@ -8,7 +8,7 @@ int main(int argc, char* argv[]) {
 	TinyDictPut(&map, "greeting", "hello", strlen("hello!") + 1);
 	TinyDictPut(&map, "name", "Bob!", strlen("Bob!") + 1);
 
-	ST_FOREACH (&map, it)
+	TINY_MAP_FOREACH (&map, it)
 		printf("%s\n", (char*)it.data);
 
 	FreeTinyMap(&map);

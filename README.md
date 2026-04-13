@@ -36,7 +36,7 @@ TinyMap map = {0};
 TinyMapPut(&map, StHashStr("greeting"), "hello", strlen("hello!") + 1);
 TinyMapPut(&map, StHashStr("name"), "Bob!", strlen("Bob!") + 1);
 
-ST_FOREACH (&map, it)
+TINY_MAP_FOREACH (&map, it)
     printf("%s\n", (char*)it.data);
 
 FreeTinyMap(&map);
@@ -54,7 +54,7 @@ The tiny-maps possess the following properties:
    void DrawEnemy(Enemy this) { /* ... */ }
 
    TinyMap enemies = ...;
-   ST_FOREACH (enemies, it)
+   TINY_MAP_FOREACH (enemies, it)
      DrawEnemy(*(Enemy*)it.data);
    ```
 
