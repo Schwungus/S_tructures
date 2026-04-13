@@ -1,6 +1,6 @@
 # S_tructures
 
-Useful dynamic data structures for plain C. Currently only implements tiny-hashmaps.
+Useful data-structures for plain C. Implements hashmaps ([tiny-maps](#tiny-maps)) and vectors ([tiny D's](#tiny-ds)).
 
 ## Installation
 
@@ -26,12 +26,13 @@ Then add a `S_tructures.c` file with the library's implementation details:
 
 And you're ready to go! Just `#include "S_tructures.h"` in your code, and have fun using these crutches.
 
-## Tiny-hashmaps
+## Tiny-Maps
 
-For now, we only have "tiny" hashmaps to offer. Here's a quick appetizer to get you started:
+Tiny-maps are tiny hashmaps. Here's an appetizer to get you started:
 
 ```c
 TinyMap map = {0};
+
 TinyMapPut(&map, StHashStr("greeting"), "hello", strlen("hello!") + 1);
 TinyMapPut(&map, StHashStr("name"), "Bob!", strlen("Bob!") + 1);
 
@@ -41,7 +42,7 @@ ST_FOREACH (&map, it)
 FreeTinyMap(&map);
 ```
 
-The tiny hashmaps have the following properties:
+The tiny-maps possess the following properties:
 
 1. Tiny-maps don't store the whole key you put in them, only an 8 byte hash at most. This is also why you need to use `StHashStr` to get a tiny-map-compatible key from a string key.
 2. Tiny-maps don't handle hash collisions, at all, due to the point above. If this issue breaks your program, you should probably buy a lottery ticket!
@@ -59,7 +60,7 @@ The tiny hashmaps have the following properties:
 
 4. Iterating over key-value pairs isn't guaranteed to result in the pairs coming in the same order they were inserted.
 
-Take a look into [our testbed](src/tests.c) for an overview of what other things our tiny-map hashmaps implementation can do.
+Take a look into [our testbed](src/tests.c) for an overview of what other things our hashmaps implementation can do.
 
 ## Tiny D's
 
@@ -79,9 +80,9 @@ As a sidenote, [tsoding](https://github.com/tsoding)'s latest videos inspired me
 
 [^append]: See its intended usage in [the Go tour](https://go.dev/tour/moretypes/15).
 
-## Advanced use-cases
+## Advanced Use-Cases
 
-### Custom allocator
+### Custom Allocator
 
 In your `S_tructures.c`, you can customize the memory allocator by defining `StAlloc`, `StFree`, `StMemset`, and `StMemcpy`. For example, to use memory utilities provided by SDL3, you can define:
 
@@ -98,7 +99,7 @@ In your `S_tructures.c`, you can customize the memory allocator by defining `StA
 
 Make sure to define `StAlloc` & `StFree` and `StMemset` & `StMemcpy` in pairs. Doing otherwise will not compile as it's a logic error; i.e. your custom `malloc` implementation should almost always come with its own custom `free` if you get the gist.
 
-### Custom logger
+### Custom Logger
 
 `StLog` is called when spitting useful error messages, and can be customized as well. Here's how it's defined by default:
 
@@ -111,7 +112,7 @@ Make sure to define `StAlloc` & `StFree` and `StMemset` & `StMemcpy` in pairs. D
   } while (0)
 ```
 
-### `TinyBucket` cleanup function
+### `TinyBucket` Cleanup Function
 
 You can set a custom cleanup function to call before deallocating data from a bucket. For example:
 
