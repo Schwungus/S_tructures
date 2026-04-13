@@ -67,7 +67,7 @@ Take a look into [our testbed](src/tests.c) for an overview of what other things
 Tiny D's work very similarly to Golang slices and provide an equivalent of the `append` idiom[^append]. The only functional difference from Go is the fact you have to free them manually as you always do with dynamically allocated memory:
 
 ```c
-uint64_t* da = MakeTinyD(uint64_t);
+int* da = MakeTinyD(int);
 
 da = TinyDAppend(da, 42);
 da = TinyDAppend(da, 67);
