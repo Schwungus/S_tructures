@@ -8,8 +8,7 @@ Include the library in your CMake project by modifying your `CMakeLists.txt`:
 
 ```cmake
 include(FetchContent)
-FetchContent_Declare(
-    S_tructures
+FetchContent_Declare(S_tructures
     GIT_REPOSITORY https://github.com/Schwungus/S_tructures.git
     GIT_TAG master) # or pin to a specific version by commit SHA
 FetchContent_MakeAvailable(S_tructures)
