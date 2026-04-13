@@ -45,69 +45,88 @@ static void run_test_fr(const char* name, void (*fn)()) {
 	} while (0)
 
 static void map_simple_put_retrieve() {
-	TinyMap* map = MakeTinyMap();
+	TinyMap map = {0};
 	int32_t data = 128;
 
-	TinyMapPut(map, 1337, &data, sizeof(data));
-	assert_eq(TinyMapGetI32(map, 1337), 128);
+	TinyMapPut(&map, 1337, &data, sizeof(data));
+	assert_eq(TinyMapGetI32(&map, 1337), 128);
 
-	FreeTinyMap(map);
+	FreeTinyMap(&map);
 }
 
 static void map_string_key_and_nuke() {
-	TinyMap* map = MakeTinyMap();
+	TinyMap map = {0};
 	int32_t data = 228;
 
-	TinyMapPut(map, StStrKey("Key1"), &data, sizeof(data));
-	assert_eq(TinyMapGetI32(map, StStrKey("Key1")), data);
+	TinyMapPut(&map, StStrKey("Key1"), &data, sizeof(data));
+	assert_eq(TinyMapGetI32(&map, StStrKey("Key1")), data);
 
-	TinyMapErase(map, StStrKey("Key1"));
-	assert_eq(TinyMapGet(map, StStrKey("Key1")), NULL);
+	TinyMapErase(&map, StStrKey("Key1"));
+	assert_eq(TinyMapGet(&map, StStrKey("Key1")), NULL);
 
-	FreeTinyMap(map);
+	FreeTinyMap(&map);
 }
 
 static void map_string_hash_and_nuke() {
-	TinyMap* map = MakeTinyMap();
+	TinyMap map = {0};
 	int32_t data = 67;
 
-	TinyDictPut(map, "SIX SEVEN", &data, sizeof(data));
-	assert_eq(TinyDictGetI32(map, "SIX SEVEN"), 67);
+	TinyDictPut(&map, "SIX SEVEN", &data, sizeof(data));
+	assert_eq(TinyDictGetI32(&map, "SIX SEVEN"), 67);
 
-	TinyDictErase(map, "SIX SEVEN");
-	assert_eq(TinyDictGet(map, "SIX SEVEN"), NULL);
+	TinyDictErase(&map, "SIX SEVEN");
+	assert_eq(TinyDictGet(&map, "SIX SEVEN"), NULL);
 
-	FreeTinyMap(map);
+	FreeTinyMap(&map);
 }
 
 static void map_retains_entries() {
-	const int entry_count = 1024;
-	TinyMap* map = MakeTinyMap();
+	const size_t real_length = 1024;
+	TinyMap map = {0};
 
 	const int32_t data = 67;
-	for (int i = 0; i < entry_count; i++)
-		TinyMapPut(map, i, &data, sizeof(data));
+	for (size_t i = 0; i < real_length; i++)
+		TinyMapPut(&map, i, &data, sizeof(data));
 
-	int iter_count = 0;
-	ST_FOREACH (map, it)
-		assert_eq(TinyMapGetI32(map, iter_count++), data);
-	assert_eq(iter_count, entry_count);
+	size_t iter_count = 0;
+	ST_FOREACH (&map, it)
+		assert_eq(TinyMapGetI32(&map, iter_count++), data);
 
-	FreeTinyMap(map);
+	assert_eq(iter_count, real_length);
+	assert_eq(TinyMapLength(&map), real_length);
+
+	FreeTinyMap(&map);
+}
+
+static void map_counts_length_correctly() {
+	const size_t entries_count = 1024;
+	TinyMap map = {0};
+
+	for (size_t i = 0; i < entries_count; i++) {
+		const int32_t data = 67;
+		TinyMapPut(&map, i, &data, sizeof(data));
+	}
+
+	for (size_t i = 0; i < entries_count; i++)
+		TinyMapErase(&map, i);
+
+	assert_eq(TinyMapLength(&map), 0);
+
+	FreeTinyMap(&map);
 }
 
 static void map_overwrites_values_on_put() {
-	TinyMap* map = MakeTinyMap();
+	TinyMap map = {0};
 
 	const int32_t d1 = 67;
-	TinyDictPut(map, "key", &d1, sizeof(d1));
-	assert_eq(d1, TinyDictGetI32(map, "key"));
+	TinyDictPut(&map, "key", &d1, sizeof(d1));
+	assert_eq(d1, TinyDictGetI32(&map, "key"));
 
 	const int64_t d2 = 69;
-	TinyDictPut(map, "key", &d2, sizeof(d2));
-	assert_eq(d2, TinyDictGetI32(map, "key"));
+	TinyDictPut(&map, "key", &d2, sizeof(d2));
+	assert_eq(d2, TinyDictGetI32(&map, "key"));
 
-	FreeTinyMap(map);
+	FreeTinyMap(&map);
 }
 
 static void test_hashmaps() {
@@ -115,6 +134,7 @@ static void test_hashmaps() {
 	run_test(map_string_key_and_nuke);
 	run_test(map_string_hash_and_nuke);
 	run_test(map_retains_entries);
+	run_test(map_counts_length_correctly);
 	run_test(map_overwrites_values_on_put);
 	// TODO: test nukes...
 }

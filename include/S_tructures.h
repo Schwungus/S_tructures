@@ -31,6 +31,7 @@ typedef struct TinyBucket {
 /// A tiny hashmap-like structure indexed with 8-byte keys.
 typedef struct {
 	TinyBucket* buckets[ST_TINY_MAP_CAPACITY];
+	size_t length;
 } TinyMap;
 
 #define ST_TINY_D_INITIAL_CAPACITY ((size_t)64)
@@ -63,15 +64,11 @@ TinyHash StStrKey(const char* s);
 /// Hash a string of arbitrary length into an `StTinyKey`.
 TinyHash StHashStr(const char* s);
 
-/// Create a new `TinyMap`. Make sure to call `FreeTinyMap` after you're done
-/// with it.
-TinyMap* MakeTinyMap();
-
 /// Cleanup a `TinyMap`.
 void FreeTinyMap(TinyMap* this);
 
 /// Returns the amount of key-value pairs inside this tiny-map.
-size_t TinyMapLength(TinyMap* this);
+size_t TinyMapLength(const TinyMap* this);
 
 /// Insert data into the tinymap. Allocates a chunk of memory and copies data
 /// from input.
@@ -281,13 +278,6 @@ TinyHash StHashStr(const char* s) {
 	return hash;
 }
 
-TinyMap* MakeTinyMap() {
-	TinyMap* this = NULL;
-	StCheckedAlloc(this, sizeof(*this));
-	StMemset(this, 0, sizeof(*this));
-	return this;
-}
-
 static void StCleanupBucket(TinyBucket* this) {
 	if (this->cleanup && this->data)
 		this->cleanup(this->data);
@@ -312,20 +302,18 @@ void FreeTinyMap(TinyMap* this) {
 		return;
 	for (int i = 0; i < ST_TINY_MAP_CAPACITY; i++)
 		FreeBucketChain(this->buckets[i]);
-	StFree(this);
+	StMemset(this, 0, sizeof(*this));
 }
 
-size_t TinyMapLength(TinyMap* this) {
-	size_t length = 0;
-	ST_FOREACH (this, iter)
-		length++;
-	return length;
+size_t TinyMapLength(const TinyMap* this) {
+	return this->length;
 }
 
 TinyBucket* TinyMapPut(TinyMap* this, TinyHash hash, const void* data, int size) {
 	size_t idx = TinyKey2Idx(hash);
 	if (!this->buckets[idx]) {
 		this->buckets[idx] = StNewTinyBucket(hash, data, size);
+		this->length++;
 		return this->buckets[idx];
 	}
 
@@ -335,6 +323,7 @@ TinyBucket* TinyMapPut(TinyMap* this, TinyHash hash, const void* data, int size)
 			bucket = bucket->next;
 		} else {
 			bucket->next = StNewTinyBucket(hash, data, size);
+			this->length++;
 			return bucket->next;
 		}
 	}
@@ -374,12 +363,14 @@ void TinyMapErase(TinyMap* this, TinyHash hash) {
 	if (bucket->hash == hash) {
 		this->buckets[idx] = bucket->next;
 		FreeSingleBucket(bucket);
+		this->length--;
 		return;
 	}
 	while (bucket->next) {
 		if (bucket->next->hash == hash) {
 			bucket->next = bucket->next->next;
 			FreeSingleBucket(bucket->next);
+			this->length--;
 			return;
 		}
 		bucket = bucket->next;

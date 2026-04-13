@@ -32,14 +32,14 @@ And you're ready to go! Just `#include "S_tructures.h"` in your code, and have f
 For now, we only have "tiny" hashmaps to offer. Here's a quick appetizer to get you started:
 
 ```c
-TinyMap* map = MakeTinyMap();
-TinyMapPut(map, StHashStr("greeting"), "hello", strlen("hello!") + 1);
-TinyMapPut(map, StHashStr("name"), "Bob!", strlen("Bob!") + 1);
+TinyMap map = {0};
+TinyMapPut(&map, StHashStr("greeting"), "hello", strlen("hello!") + 1);
+TinyMapPut(&map, StHashStr("name"), "Bob!", strlen("Bob!") + 1);
 
-ST_FOREACH (map, it)
+ST_FOREACH (&map, it)
     printf("%s\n", (char*)it.data);
 
-FreeTinyMap(map), map = NULL;
+FreeTinyMap(&map);
 ```
 
 The tiny hashmaps have the following properties:
@@ -53,10 +53,9 @@ The tiny hashmaps have the following properties:
 
    void DrawEnemy(Enemy this) { /* ... */ }
 
-   TinyMap* enemies = MakeTinyMap();
-   ST_FOREACH (enemies, it) {
+   TinyMap enemies = ...;
+   ST_FOREACH (enemies, it)
      DrawEnemy(*(Enemy*)it.data);
-   }
    ```
 
 4. Iterating over key-value pairs isn't guaranteed to result in the pairs coming in the same order they were inserted.
@@ -123,11 +122,11 @@ static void CleanupTexture(void* ptr) {
     UnloadTexture(*(Texture*)ptr);
 }
 
-TinyMap* map = MakeTinyMap();
+TinyMap map = {0};
 
 Texture tx = LoadTexture("...");
-TinyBucket* bucket = TinyDictPut(map, "MyTex", &tx, sizeof(tx)); // copies `tx` into `map`
+TinyBucket* bucket = TinyDictPut(&map, "MyTex", &tx, sizeof(tx)); // copies `tx` into `map`
 bucket->cleanup = CleanupTexture;
 
-FreeTinyMap(map); // `CleanupTexture` will be called with a pointer to texture data as the argument
+FreeTinyMap(&map); // `CleanupTexture` will be called with a pointer to texture data as the argument
 ```
