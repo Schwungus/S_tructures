@@ -1,12 +1,7 @@
-Checks:
-  [
-    clang-diagnostic-*,
+Checks: [
     clang-analyzer-*,
     bugprone-*,
-    -bugprone-assignment-in-if-condition,
-    -bugprone-suspicious-string-compare,
-    -bugprone-easily-swappable-parameters,
+    -bugprone-easily-swappable-parameters, # impossible to avoid in this spaghetti codebase
     performance-*,
-    -performance-no-int-to-ptr,
     portability-*,
   ]
