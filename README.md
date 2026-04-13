@@ -65,7 +65,19 @@ Take a look into [our testbed](src/tests.c) for an overview of what other things
 
 ## Tiny D's
 
-TODO: explain tiny D's.
+Tiny D's work very similarly to Golang slices and provide an equivalent of the `append` construct[^append]. The only functional difference from Go is the fact you have to free them manually as you always do with dynamically allocated memory:
+
+```c
+uint64_t* da = MakeTinyD(uint64_t);
+
+da = TinyDAppend(da, 42);
+da = TinyDAppend(da, 67);
+printf("the sum of %d plus %d is: %d", da[0], da[1], da[0] + da[1]);
+
+FreeTinyD(da);
+```
+
+[^append]: See its intended usage in [the Go tour](https://go.dev/tour/moretypes/15).
 
 ## Advanced use-cases
 
