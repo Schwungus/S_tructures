@@ -5,7 +5,7 @@ Checks:
     bugprone-*,
     -bugprone-assignment-in-if-condition,
     -bugprone-suspicious-string-compare,
-    -bugprone-reserved-identifier,
+    -bugprone-easily-swappable-parameters,
     performance-*,
     -performance-no-int-to-ptr,
     portability-*,

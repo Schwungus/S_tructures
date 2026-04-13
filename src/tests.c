@@ -18,8 +18,8 @@ static void counted_free(void* ptr) {
 #define StFree counted_free
 #include "S_tructures.h"
 
-#define run_test(fn) _run_test(#fn, fn)
-static void _run_test(const char* name, void (*fn)()) {
+#define run_test(fn) run_test_fr(#fn, fn)
+static void run_test_fr(const char* name, void (*fn)()) {
 	static int test_counter = 0;
 	printf("TEST #%d '%s':\n\n", ++test_counter, name);
 	fflush(stdout);
@@ -119,8 +119,25 @@ static void test_hashmaps() {
 	// TODO: test nukes...
 }
 
+static void d_append_doesnt_crash() {
+	uint64_t* da = MakeTinyD(uint64_t);
+	const size_t count = ST_TINY_D_INITIAL_CAPACITY * (ST_TINY_D_GROWTH_FACTOR * 8);
+
+	for (uint64_t i = 0; i < count; i++)
+		da = TinyDAppend(da, i);
+
+	assert_eq(da[3], 3);
+	assert_eq(da[count - 5], count - 5);
+
+	FreeTinyD(da);
+}
+
+static void test_tinyDs() {
+	run_test(d_append_doesnt_crash);
+}
+
 int main(int argc, char* argv[]) {
-	test_hashmaps();
+	test_hashmaps(), test_tinyDs();
 	printf("All good!\n"), fflush(stdout);
 	return EXIT_SUCCESS;
 }

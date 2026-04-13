@@ -33,6 +33,14 @@ typedef struct {
 	TinyBucket* buckets[ST_TINY_MAP_CAPACITY];
 } TinyMap;
 
+#define ST_TINY_D_INITIAL_CAPACITY ((size_t)64)
+#define ST_TINY_D_GROWTH_FACTOR ((size_t)2)
+
+/// The header of a tiny dynamic array. You never interact with it directly.
+typedef struct {
+	size_t length, capacity, elt_size;
+} TinyDHead;
+
 /// A generic iterator over S_tructures.
 typedef struct StIter {
 	bool (*next)(struct StIter*);
@@ -72,13 +80,13 @@ size_t TinyMapLength(TinyMap* this);
 /// function.
 TinyBucket* TinyMapPut(TinyMap* this, TinyHash hash, const void* data, int size);
 
-/// An alias for `TinyMapPut` which accepts string keys and hashes them for you.
+/// An shorthand for `TinyMapPut` which accepts string keys and hashes them for you.
 #define TinyDictPut(this, hash, data, size) TinyMapPut((this), StHashStr((hash)), (data), (size))
 
 /// Find the bucket by input key, or return `NULL` if there is none.
 TinyBucket* TinyMapFind(const TinyMap* this, TinyHash hash);
 
-/// An alias for `TinyMapFind` which accepts string keys and hashes them for you.
+/// An shorthand for `TinyMapFind` which accepts string keys and hashes them for you.
 #define TinyDictFind(this, hash) TinyMapFind((this), StHashStr((hash)))
 
 /// Returns a pointer to an entry's data, if any. Spits out a `NULL` otherwise.
@@ -86,14 +94,38 @@ TinyBucket* TinyMapFind(const TinyMap* this, TinyHash hash);
 /// If you need to check the entry's actual size, use the full-form `TinyMapFind`.
 char* TinyMapGet(const TinyMap* this, TinyHash hash);
 
-/// An alias for `TinyMapGet` which accepts string keys and hashes them for you.
+/// An shorthand for `TinyMapGet` which accepts string keys and hashes them for you.
 #define TinyDictGet(this, hash) TinyMapGet((this), StHashStr((hash)))
 
 /// Free the bucket and the data associated with a key.
 void TinyMapErase(TinyMap* this, TinyHash hash);
 
-/// An alias for `TinyMapErase` which accepts string keys and hashes them for you.
+/// An shorthand for `TinyMapErase` which accepts string keys and hashes them for you.
 #define TinyDictErase(this, hash) TinyMapErase((this), StHashStr((hash)))
+
+/// Creates a dynamic-array with the specified capacity and element-size.
+void* MakeTinyDPro(size_t capacity, size_t elt_size);
+
+/// Properly cleans up a tiny dynamic-array and its header.
+void FreeTinyD(void* this);
+
+/// A shorthand for `MakeTinyDPro` that creates a dynamic-array with a default capacity and the
+/// element-size equal to the size requirement of the passed type.
+#define MakeTinyD(T) ((T*)MakeTinyDPro(ST_TINY_D_INITIAL_CAPACITY, sizeof(T)))
+
+/// Appends an element to the dynamic-array, growing it if necessary. DO NOT FORGET to assign the
+/// result of this to the array you passed in.
+void* TinyDAppendPro(void* this, const void* ref);
+
+/// A shorthand for `TinyDPush` that accepts any value, not just pointers. DO NOT FORGET to assign
+/// the result of this to the array you passed in.
+///
+/// (Ab)uses the GCC compound statement extension; may not work with non-mainstream compilers.
+#define TinyDAppend(this, value)                                                                   \
+	({                                                                                         \
+		__typeof__(value) tmp = (value);                                                   \
+		TinyDAppendPro((this), &tmp);                                                      \
+	})
 
 /// Create an iterator over the values of a tiny-map.
 ///
@@ -199,6 +231,9 @@ ST_MAKE_MAP_GET(U64, uint64_t);
 #ifdef S_TRUCTURES_IMPLEMENTATION
 
 #define TinyKey2Idx(key) ((size_t)((ST_TINY_MAP_CAPACITY - 1) & StShuffleKey(key)))
+
+#define TinyDGetHead(ptr) ((TinyDHead*)((char*)(ptr) - sizeof(TinyDHead)))
+
 static const TinyHash StShuffleKey(const TinyHash hash) {
 	return hash ^ (hash >> (4 * sizeof(hash)));
 }
@@ -369,6 +404,49 @@ StIter TinyMapIter(void* this) {
 		.source = this,
 		.aux = -1,
 	};
+}
+
+void* MakeTinyDPro(size_t capacity, size_t elt_size) {
+	char* ptr = NULL;
+	StCheckedAlloc(ptr, sizeof(TinyDHead) + elt_size * capacity);
+
+	TinyDHead* head = (TinyDHead*)ptr;
+	head->elt_size = elt_size, head->capacity = capacity;
+	head->length = 0;
+
+	return head + 1;
+}
+
+void FreeTinyD(void* this) {
+	if (this)
+		StFree(TinyDGetHead(this));
+}
+
+void* TinyDAppendPro(void* this, const void* ref) {
+	char* buf = this;
+
+	const size_t length = TinyDGetHead(buf)->length, elt_size = TinyDGetHead(buf)->elt_size,
+		     no_cap = TinyDGetHead(buf)->capacity;
+
+	if (length == no_cap) {
+		const size_t newcap
+			= no_cap ? no_cap * ST_TINY_D_GROWTH_FACTOR : ST_TINY_D_INITIAL_CAPACITY;
+
+		char* tmp = NULL;
+		StCheckedAlloc(tmp, elt_size * newcap + sizeof(TinyDHead));
+		tmp += sizeof(TinyDHead);
+
+		TinyDGetHead(tmp)->capacity = newcap, TinyDGetHead(tmp)->length = length;
+		TinyDGetHead(tmp)->elt_size = elt_size;
+		StMemcpy(tmp, buf, no_cap * elt_size);
+
+		FreeTinyD(buf), buf = tmp;
+	}
+
+	StMemcpy(buf + length * elt_size, ref, elt_size);
+	TinyDGetHead(buf)->length++;
+
+	return buf;
 }
 
 bool StIterNext(StIter* iter) {

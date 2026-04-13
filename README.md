@@ -2,9 +2,7 @@
 
 Useful dynamic data structures for plain C. Currently only implements tiny-hashmaps.
 
-## Basic usage
-
-### Installation
+## Installation
 
 Include the library in your CMake project by modifying your `CMakeLists.txt`:
 
@@ -29,7 +27,7 @@ Then add a `S_tructures.c` file with the library's implementation details:
 
 And you're ready to go! Just `#include "S_tructures.h"` in your code, and have fun using these crutches.
 
-### Tiny-hashmaps
+## Tiny-hashmaps
 
 For now, we only have "tiny" hashmaps to offer. Here's a quick appetizer to get you started:
 
@@ -64,6 +62,10 @@ The tiny hashmaps have the following properties:
 4. Iterating over key-value pairs isn't guaranteed to result in the pairs coming in the same order they were inserted.
 
 Take a look into [our testbed](src/tests.c) for an overview of what other things our tiny-map hashmaps implementation can do.
+
+## Tiny D's
+
+TODO: explain tiny D's.
 
 ## Advanced use-cases
 
