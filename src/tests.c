@@ -129,23 +129,22 @@ static void map_overwrites_values_on_put() {
 	FreeTinyMap(&map);
 }
 
-static void map_safe_to_reuse() {
-	TinyMap map = {0};
+static void reuse_map(TinyMap* map) {
 	const int32_t d = 123;
 
-	TinyDictPut(&map, "hello", &d, sizeof(d));
-	assert_eq(d, TinyDictGetI32(&map, "hello"));
-	assert_eq(1, TinyMapLength(&map));
+	TinyDictPut(map, "hello", &d, sizeof(d));
+	assert_eq(d, TinyDictGetI32(map, "hello"));
+	assert_eq(1, TinyMapLength(map));
 
-	FreeTinyMap(&map);
-	assert_eq(0, TinyMapLength(&map));
+	FreeTinyMap(map);
+	assert_eq(0, TinyMapLength(map));
+}
 
-	TinyDictPut(&map, "hello", &d, sizeof(d));
-	assert_eq(d, TinyDictGetI32(&map, "hello"));
-	assert_eq(1, TinyMapLength(&map));
-
-	FreeTinyMap(&map);
-	assert_eq(0, TinyMapLength(&map));
+static void map_safe_to_reuse() {
+	TinyMap map = {0};
+	reuse_map(&map);
+	reuse_map(&map);
+	reuse_map(&map);
 }
 
 static void test_hashmaps() {
