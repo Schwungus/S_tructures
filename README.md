@@ -65,7 +65,7 @@ Take a look into [our testbed](src/tests.c) for an overview of what other things
 
 ## Tiny D's
 
-Tiny D's work very similarly to Golang slices and provide an equivalent of the `append` construct[^append]. The only functional difference from Go is the fact you have to free them manually as you always do with dynamically allocated memory:
+Tiny D's work very similarly to Golang slices and provide an equivalent of the `append` idiom[^append]. The only functional difference from Go is the fact you have to free them manually as you always do with dynamically allocated memory:
 
 ```c
 uint64_t* da = MakeTinyD(uint64_t);
@@ -76,6 +76,8 @@ printf("the sum of %d plus %d is: %d", da[0], da[1], da[0] + da[1]);
 
 FreeTinyD(da);
 ```
+
+As a sidenote, [tsoding](https://github.com/tsoding)'s latest videos inspired me to add tiny D's because he, too, realized the convenience of using dynamic arrays in your programs, as opposed to coding up custom linked-list datastructures for each dynamically growing container type. I just wanted to share my view on how these should be implemented: transparent for the end-user (the programmer) _and_ modelled after an existing, established idiom, which happens to be Go's slices and the `append` construct.
 
 [^append]: See its intended usage in [the Go tour](https://go.dev/tour/moretypes/15).
 
