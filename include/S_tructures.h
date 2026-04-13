@@ -106,12 +106,16 @@ void TinyMapErase(TinyMap* this, TinyHash hash);
 /// Creates a dynamic-array with the specified capacity and element-size.
 void* MakeTinyDPro(size_t capacity, size_t elt_size);
 
-/// Properly cleans up a tiny dynamic-array and its header.
-void FreeTinyD(void* this);
-
 /// A shorthand for `MakeTinyDPro` that creates a dynamic-array with a default capacity and the
 /// element-size equal to the size requirement of the passed type.
 #define MakeTinyD(T) ((T*)MakeTinyDPro(ST_TINY_D_INITIAL_CAPACITY, sizeof(T)))
+
+/// Properly cleans up a tiny dynamic-array and its header.
+void FreeTinyD(void* this);
+
+#define TinyDLength(this) (TinyDGetHead((this))->length)
+#define TinyDCapacity(this) (TinyDGetHead((this))->capacity)
+#define TinyDElementSize(this) (TinyDGetHead((this))->elt_size)
 
 /// Appends an element to the dynamic-array, growing it if necessary. DO NOT FORGET to assign the
 /// result of this to the array you passed in.
@@ -409,12 +413,12 @@ StIter TinyMapIter(void* this) {
 void* MakeTinyDPro(size_t capacity, size_t elt_size) {
 	char* ptr = NULL;
 	StCheckedAlloc(ptr, sizeof(TinyDHead) + elt_size * capacity);
+	ptr += sizeof(TinyDHead);
 
-	TinyDHead* head = (TinyDHead*)ptr;
-	head->elt_size = elt_size, head->capacity = capacity;
-	head->length = 0;
+	TinyDLength(ptr) = 0, TinyDCapacity(ptr) = capacity;
+	TinyDElementSize(ptr) = elt_size;
 
-	return head + 1;
+	return ptr;
 }
 
 void FreeTinyD(void* this) {
@@ -425,8 +429,8 @@ void FreeTinyD(void* this) {
 void* TinyDAppendPro(void* this, const void* ref) {
 	char* buf = this;
 
-	const size_t length = TinyDGetHead(buf)->length, elt_size = TinyDGetHead(buf)->elt_size,
-		     no_cap = TinyDGetHead(buf)->capacity;
+	const size_t length = TinyDLength(buf), elt_size = TinyDElementSize(buf),
+		     no_cap = TinyDCapacity(buf);
 
 	if (length == no_cap) {
 		const size_t newcap
@@ -436,15 +440,15 @@ void* TinyDAppendPro(void* this, const void* ref) {
 		StCheckedAlloc(tmp, elt_size * newcap + sizeof(TinyDHead));
 		tmp += sizeof(TinyDHead);
 
-		TinyDGetHead(tmp)->capacity = newcap, TinyDGetHead(tmp)->length = length;
-		TinyDGetHead(tmp)->elt_size = elt_size;
+		TinyDCapacity(tmp) = newcap, TinyDLength(tmp) = length;
+		TinyDElementSize(tmp) = elt_size;
 		StMemcpy(tmp, buf, no_cap * elt_size);
 
 		FreeTinyD(buf), buf = tmp;
 	}
 
 	StMemcpy(buf + length * elt_size, ref, elt_size);
-	TinyDGetHead(buf)->length++;
+	TinyDLength(buf)++;
 
 	return buf;
 }
