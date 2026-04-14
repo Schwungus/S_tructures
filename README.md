@@ -31,14 +31,20 @@ And you're ready to go! Just `#include "S_tructures.h"` in your code, and have f
 Tiny-maps are tiny hashmaps. Here's an appetizer to get you started:
 
 ```c
+// zero-initialization on the stack is more than enough.
 TinyMap map = {0};
 
-TinyMapPut(&map, StHashStr("greeting"), "hello", strlen("hello!") + 1);
-TinyMapPut(&map, StHashStr("name"), "Bob!", strlen("Bob!") + 1);
+TinyMapPut(&map, StHashStr("greeting"), "hello", strlen("hello") + 1);
+TinyMapPut(&map, StHashStr("name"), "Bob", strlen("Bob") + 1);
 
 TINY_MAP_FOREACH (&map, it)
     printf("%s\n", (char*)it.data);
 
+// shorthand for the `TinyMapPut`s above:
+TinyDictPut(&map, "greeting", "goodbye", strlen("goodbye") + 1);
+TinyDictPut(&map, "name", "Alice", strlen("Alice") + 1);
+
+// and don't forget to nuke this bastard!
 FreeTinyMap(&map);
 ```
 
