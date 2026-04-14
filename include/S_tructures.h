@@ -1,4 +1,5 @@
-#pragma once
+#ifndef S_TRUCTURES_H
+#define S_TRUCTURES_H
 
 #ifndef S_TRUCTURES_NOSTD
 #include <stdbool.h>
@@ -114,9 +115,9 @@ void* MakeTinyDPro(size_t capacity, size_t elt_size);
 /// Properly cleans up a tiny dynamic-array and its header.
 void FreeTinyD(void* this);
 
-#define TinyDLength(this) (TinyDGetHead((this))->length)
-#define TinyDCapacity(this) (TinyDGetHead((this))->capacity)
-#define TinyDElementSize(this) (TinyDGetHead((this))->elt_size)
+/// Returns a specific property of a tiny-D.
+size_t TinyDLength(const void* this), TinyDCapacity(const void* this),
+	TinyDElementSize(const void* this);
 
 /// Appends an element to the dynamic-array, growing it if necessary. DO NOT FORGET to assign the
 /// result of this to the array you passed in.
@@ -226,8 +227,7 @@ ST_MAKE_MAP_GET(U64, uint64_t);
 #ifdef S_TRUCTURES_IMPLEMENTATION
 
 #define TinyKey2Idx(key) ((size_t)((ST_TINY_MAP_CAPACITY - 1) & StShuffleKey(key)))
-
-#define TinyDGetHead(ptr) ((TinyDHead*)((char*)(ptr) - sizeof(TinyDHead)))
+#define TinyDGetHead(ptr) ((ptr) ? ((TinyDHead*)((char*)(ptr) - sizeof(TinyDHead))) : NULL)
 
 static const TinyHash StShuffleKey(const TinyHash hash) {
 	return hash ^ (hash >> (4 * sizeof(hash)));
@@ -419,13 +419,25 @@ TinyMapIterator TinyMapIter(TinyMap* this) {
 	return (TinyMapIterator){.source = this};
 }
 
+size_t TinyDLength(const void* this) {
+	return TinyDGetHead(this) ? TinyDGetHead(this)->length : 0;
+}
+
+size_t TinyDCapacity(const void* this) {
+	return TinyDGetHead(this) ? TinyDGetHead(this)->capacity : 0;
+}
+
+size_t TinyDElementSize(const void* this) {
+	return TinyDGetHead(this) ? TinyDGetHead(this)->elt_size : 0;
+}
+
 void* MakeTinyDPro(size_t capacity, size_t elt_size) {
 	char* ptr = NULL;
 	StCheckedAlloc(ptr, sizeof(TinyDHead) + elt_size * capacity);
 	ptr += sizeof(TinyDHead);
 
-	TinyDLength(ptr) = 0, TinyDCapacity(ptr) = capacity;
-	TinyDElementSize(ptr) = elt_size;
+	TinyDGetHead(ptr)->length = 0, TinyDGetHead(ptr)->capacity = capacity;
+	TinyDGetHead(ptr)->elt_size = elt_size;
 
 	return ptr;
 }
@@ -436,10 +448,13 @@ void FreeTinyD(void* this) {
 }
 
 void* TinyDAppendPro(void* this, const void* ref) {
+	if (!TinyDGetHead(this))
+		return NULL;
+
 	char* buf = this;
 
-	const size_t length = TinyDLength(buf), elt_size = TinyDElementSize(buf),
-		     no_cap = TinyDCapacity(buf);
+	const size_t length = TinyDGetHead(buf)->length, elt_size = TinyDGetHead(buf)->elt_size,
+		     no_cap = TinyDGetHead(buf)->capacity;
 
 	if (length == no_cap) {
 		const size_t newcap
@@ -449,19 +464,23 @@ void* TinyDAppendPro(void* this, const void* ref) {
 		StCheckedAlloc(tmp, elt_size * newcap + sizeof(TinyDHead));
 		tmp += sizeof(TinyDHead);
 
-		TinyDCapacity(tmp) = newcap, TinyDLength(tmp) = length;
-		TinyDElementSize(tmp) = elt_size;
-		StMemcpy(tmp, buf, no_cap * elt_size);
+		TinyDGetHead(tmp)->capacity = newcap;
+		TinyDGetHead(tmp)->length = length;
+		TinyDGetHead(tmp)->elt_size = elt_size;
 
+		StMemcpy(tmp, buf, no_cap * elt_size);
 		FreeTinyD(buf), buf = tmp;
 	}
 
 	StMemcpy(buf + length * elt_size, ref, elt_size);
-	TinyDLength(buf)++;
+	TinyDGetHead(buf)->length += 1;
 
 	return buf;
 }
 
+#undef TinyDGetHead
 #undef TinyKey2Idx
 
-#endif
+#endif // S_TRUCTURES_IMPLEMENTATION
+
+#endif // S_TRUCTURES_H
