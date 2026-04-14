@@ -159,10 +159,10 @@ static void test_hashmaps() {
 }
 
 static void d_append_doesnt_crash() {
-    uint64_t* da = MakeTinyD(uint64_t);
+    int* da = MakeTinyD(int);
     const size_t count = ST_TINY_D_INITIAL_CAPACITY * (ST_TINY_D_GROWTH_FACTOR * 8);
 
-    for (uint64_t i = 0; i < count; i++)
+    for (int i = 0; i < count; i++)
         da = TinyDAppend(da, i);
 
     assert_eq(da[3], 3);
@@ -171,8 +171,27 @@ static void d_append_doesnt_crash() {
     FreeTinyD(da);
 }
 
+static void d_pops() {
+    int* da = MakeTinyD(int);
+
+    da = TinyDAppend(da, 123);
+    assert_eq(da[0], 123);
+    assert_eq(TinyDLength(da), 1);
+
+    da = TinyDPop(da);
+    assert_eq(da[0], 123);
+    assert_eq(TinyDLength(da), 0);
+
+    da = TinyDAppend(da, 777);
+    assert_eq(da[0], 777);
+    assert_eq(TinyDLength(da), 1);
+
+    FreeTinyD(da);
+}
+
 static void test_tinyDs() {
     run_test(d_append_doesnt_crash);
+    run_test(d_pops);
 }
 
 int main(int argc, char* argv[]) {

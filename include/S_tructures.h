@@ -133,6 +133,12 @@ void* TinyDAppendPro(void* this, const void* ref);
         TinyDAppendPro((this), &tmp);                                                              \
     })
 
+/// Shrinks a tiny-D's internal length counter to the specified value.
+void* TinyDShrink(void* this, size_t newlen);
+
+/// Shaves the last appended value off the tiny-D.
+void* TinyDPop(void* this);
+
 #ifdef S_TRUCTURES_IMPLEMENTATION
 
 #if !defined(StAlloc) && !defined(StFree)
@@ -445,6 +451,18 @@ void* MakeTinyDPro(size_t capacity, size_t elt_size) {
 void FreeTinyD(void* this) {
     if (this)
         StFree(TinyDGetHead(this));
+}
+
+void* TinyDShrink(void* this, size_t newlen) {
+    if (this && newlen < TinyDLength(this))
+        TinyDGetHead(this)->length = newlen;
+    return this;
+}
+
+void* TinyDPop(void* this) {
+    if (TinyDLength(this) > 0)
+        return TinyDShrink(this, TinyDLength(this) - 1);
+    return this;
 }
 
 void* TinyDAppendPro(void* this, const void* ref) {
