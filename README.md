@@ -61,7 +61,7 @@ The tiny-maps possess the following properties:
 
    TinyMap enemies = ...;
    TINY_MAP_FOREACH (enemies, it)
-     DrawEnemy(*(Enemy*)it.data);
+       DrawEnemy(*(Enemy*)it.data);
    ```
 
 4. Iterating over key-value pairs isn't guaranteed to result in the pairs coming in the same order they were inserted.
@@ -112,10 +112,10 @@ Make sure to define `StAlloc` & `StFree` and `StMemset` & `StMemcpy` in pairs. D
 ```c
 #include <stdio.h>
 #define StLog(...) \
-  do { \
-    fprintf(stdout, "[S_tr]: %c" __VA_ARGS__, '\n'); \
-    fflush(stdout); \
-  } while (0)
+    do { \
+        fprintf(stdout, "[S_tr]: %c" __VA_ARGS__, '\n'); \
+        fflush(stdout); \
+    } while (0)
 ```
 
 ### `TinyBucket` Cleanup Function

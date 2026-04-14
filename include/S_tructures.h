@@ -23,24 +23,24 @@ typedef uint64_t TinyHash;
 
 /// An internal storage cell for `TinyMap`s. Essentially a singly linked list.
 typedef struct TinyBucket {
-	TinyHash hash;
-	void *data, (*cleanup)(void*);
-	size_t data_size;
-	struct TinyBucket* next;
+    TinyHash hash;
+    void *data, (*cleanup)(void*);
+    size_t data_size;
+    struct TinyBucket* next;
 } TinyBucket;
 
 /// A tiny hashmap-like structure indexed with 8-byte keys.
 typedef struct {
-	TinyBucket** buckets;
-	size_t length;
+    TinyBucket** buckets;
+    size_t length;
 } TinyMap;
 
 /// An iterator over tiny-maps.
 typedef struct {
-	TinyMap* source;
-	TinyBucket* bucket;
-	size_t bucket_idx;
-	void* data;
+    TinyMap* source;
+    TinyBucket* bucket;
+    size_t bucket_idx;
+    void* data;
 } TinyMapIterator;
 
 #define ST_TINY_D_INITIAL_CAPACITY ((size_t)64)
@@ -48,7 +48,7 @@ typedef struct {
 
 /// The header of a tiny dynamic array. You never interact with it directly.
 typedef struct {
-	size_t length, capacity, elt_size;
+    size_t length, capacity, elt_size;
 } TinyDHead;
 
 #define TINY_MAP_FOREACH(map, it) for (TinyMapIterator it = TinyMapIter((map)); TinyMapNext(&(it));)
@@ -117,7 +117,7 @@ void FreeTinyD(void* this);
 
 /// Returns a specific property of a tiny-D.
 size_t TinyDLength(const void* this), TinyDCapacity(const void* this),
-	TinyDElementSize(const void* this);
+    TinyDElementSize(const void* this);
 
 /// Appends an element to the dynamic-array, growing it if necessary. DO NOT FORGET to assign the
 /// result of this to the array you passed in.
@@ -128,10 +128,10 @@ void* TinyDAppendPro(void* this, const void* ref);
 ///
 /// (Ab)uses the GCC compound statement extension; may not work with non-mainstream compilers.
 #define TinyDAppend(this, value)                                                                   \
-	({                                                                                         \
-		__typeof__(value) tmp = (value);                                                   \
-		TinyDAppendPro((this), &tmp);                                                      \
-	})
+    ({                                                                                             \
+        __typeof__(value) tmp = (value);                                                           \
+        TinyDAppendPro((this), &tmp);                                                              \
+    })
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
 
@@ -162,10 +162,10 @@ void* TinyDAppendPro(void* this, const void* ref);
 #ifndef StLog
 #include <stdio.h>
 #define StLog(...)                                                                                 \
-	do {                                                                                       \
-		fprintf(stdout, "[S_tr]: %c" __VA_ARGS__, '\n');                                   \
-		fflush(stdout);                                                                    \
-	} while (0)
+    do {                                                                                           \
+        fprintf(stdout, "[S_tr]: %c" __VA_ARGS__, '\n');                                           \
+        fflush(stdout);                                                                            \
+    } while (0)
 #endif
 
 #ifndef StDie
@@ -175,44 +175,44 @@ void* TinyDAppendPro(void* this, const void* ref);
 ST_NORETURN void StDie()
 #ifdef S_TRUCTURES_IMPLEMENTATION
 {
-	exit(EXIT_FAILURE);
+    exit(EXIT_FAILURE);
 }
 #else
-	;
+    ;
 #endif
 
 #endif
 
 #define StOutOfJuice()                                                                             \
-	do {                                                                                       \
-		StLog("Out of memory!!!");                                                         \
-		StDie();                                                                           \
-	} while (0)
+    do {                                                                                           \
+        StLog("Out of memory!!!");                                                                 \
+        StDie();                                                                                   \
+    } while (0)
 
 #define StCheckedAlloc(var, size)                                                                  \
-	do {                                                                                       \
-		(var) = (__typeof__((var)))StAlloc((size));                                        \
-		if (!(var))                                                                        \
-			StOutOfJuice();                                                            \
-	} while (0)
+    do {                                                                                           \
+        (var) = (__typeof__((var)))StAlloc((size));                                                \
+        if (!(var))                                                                                \
+            StOutOfJuice();                                                                        \
+    } while (0)
 
 #endif
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
 #define ST_MAKE_MAP_GET(suffix, type)                                                              \
-	type TinyMapGet##suffix(const TinyMap* this, TinyHash hash) {                              \
-		const void* data = TinyMapGet(this, hash);                                         \
-		return data ? *(type*)data : 0;                                                    \
-	}                                                                                          \
+    type TinyMapGet##suffix(const TinyMap* this, TinyHash hash) {                                  \
+        const void* data = TinyMapGet(this, hash);                                                 \
+        return data ? *(type*)data : 0;                                                            \
+    }                                                                                              \
                                                                                                    \
-	type TinyDictGet##suffix(const TinyMap* this, const char* key) {                           \
-		const void* data = TinyMapGet(this, StHashStr(key));                               \
-		return data ? *(type*)data : 0;                                                    \
-	}
+    type TinyDictGet##suffix(const TinyMap* this, const char* key) {                               \
+        const void* data = TinyMapGet(this, StHashStr(key));                                       \
+        return data ? *(type*)data : 0;                                                            \
+    }
 #else
 #define ST_MAKE_MAP_GET(suffix, type)                                                              \
-	type TinyMapGet##suffix(const TinyMap*, TinyHash);                                         \
-	type TinyDictGet##suffix(const TinyMap*, const char*);
+    type TinyMapGet##suffix(const TinyMap*, TinyHash);                                             \
+    type TinyDictGet##suffix(const TinyMap*, const char*);
 #endif
 
 ST_MAKE_MAP_GET(I16, int16_t);
@@ -230,35 +230,35 @@ ST_MAKE_MAP_GET(U64, uint64_t);
 #define TinyDGetHead(ptr) ((ptr) ? ((TinyDHead*)((char*)(ptr) - sizeof(TinyDHead))) : NULL)
 
 static const TinyHash StShuffleKey(const TinyHash hash) {
-	return hash ^ (hash >> (4 * sizeof(hash)));
+    return hash ^ (hash >> (4 * sizeof(hash)));
 }
 
 static TinyBucket* StNewTinyBucket(TinyHash hash, const void* data, int size) {
-	if (size < 1) { // TODO: bar behind a debug build check?
-		StLog("Requested bucket size 0; catching on fire");
-		return NULL;
-	}
+    if (size < 1) { // TODO: bar behind a debug build check?
+        StLog("Requested bucket size 0; catching on fire");
+        return NULL;
+    }
 
-	TinyBucket* this = NULL;
-	StCheckedAlloc(this, sizeof(*this));
-	this->cleanup = NULL, this->next = NULL, this->hash = hash;
-	this->data_size = size, this->data = NULL;
-	StCheckedAlloc(this->data, this->data_size);
-	StMemcpy(this->data, data, this->data_size);
-	return this;
+    TinyBucket* this = NULL;
+    StCheckedAlloc(this, sizeof(*this));
+    this->cleanup = NULL, this->next = NULL, this->hash = hash;
+    this->data_size = size, this->data = NULL;
+    StCheckedAlloc(this->data, this->data_size);
+    StMemcpy(this->data, data, this->data_size);
+    return this;
 }
 
 TinyHash StStrKey(const char* s) {
-	static char buf[sizeof(TinyHash)] = {0};
-	if (!s)
-		return 0;
-	for (int i = 0; i < sizeof(buf); i++)
-		if (!s[i]) {
-			StMemcpy(buf, s, i);
-			StMemset(buf + i, 0xFF, sizeof(buf) - i);
-			return *(TinyHash*)buf;
-		}
-	return *(TinyHash*)s;
+    static char buf[sizeof(TinyHash)] = {0};
+    if (!s)
+        return 0;
+    for (int i = 0; i < sizeof(buf); i++)
+        if (!s[i]) {
+            StMemcpy(buf, s, i);
+            StMemset(buf + i, 0xFF, sizeof(buf) - i);
+            return *(TinyHash*)buf;
+        }
+    return *(TinyHash*)s;
 }
 
 // Thanks:
@@ -266,216 +266,216 @@ TinyHash StStrKey(const char* s) {
 // 2. <https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function>
 
 TinyHash StHashStr(const char* s) {
-	TinyHash hash = 0xcbf29ce484222325;
-	for (; s && *s; s++)
-		hash ^= *(uint8_t*)s, hash *= 0x00000100000001b3;
-	return hash;
+    TinyHash hash = 0xcbf29ce484222325;
+    for (; s && *s; s++)
+        hash ^= *(uint8_t*)s, hash *= 0x00000100000001b3;
+    return hash;
 }
 
 static void StCleanupBucket(TinyBucket* this) {
-	if (this->cleanup && this->data)
-		this->cleanup(this->data);
+    if (this->cleanup && this->data)
+        this->cleanup(this->data);
 }
 
 static void FreeSingleBucket(TinyBucket* this) {
-	StCleanupBucket(this);
-	if (this->data)
-		StFree(this->data);
-	StFree(this);
+    StCleanupBucket(this);
+    if (this->data)
+        StFree(this->data);
+    StFree(this);
 }
 
 static void FreeBucketChain(TinyBucket* this) {
-	if (this) {
-		FreeBucketChain(this->next);
-		FreeSingleBucket(this);
-	}
+    if (this) {
+        FreeBucketChain(this->next);
+        FreeSingleBucket(this);
+    }
 }
 
 void FreeTinyMap(TinyMap* this) {
-	if (!this)
-		return;
+    if (!this)
+        return;
 
-	if (this->buckets) {
-		for (int i = 0; i < ST_TINY_MAP_CAPACITY; i++)
-			FreeBucketChain(this->buckets[i]);
-		StFree((void*)this->buckets), this->buckets = NULL;
-	}
+    if (this->buckets) {
+        for (int i = 0; i < ST_TINY_MAP_CAPACITY; i++)
+            FreeBucketChain(this->buckets[i]);
+        StFree((void*)this->buckets), this->buckets = NULL;
+    }
 
-	this->length = 0;
+    this->length = 0;
 }
 
 size_t TinyMapLength(const TinyMap* this) {
-	return this->length;
+    return this->length;
 }
 
 TinyBucket* TinyMapPut(TinyMap* this, TinyHash hash, const void* data, int size) {
-	if (!this->buckets) {
-		StCheckedAlloc(this->buckets, sizeof(TinyBucket*) * ST_TINY_MAP_CAPACITY);
-		StMemset((void*)this->buckets, 0, sizeof(TinyBucket*) * ST_TINY_MAP_CAPACITY);
-	}
+    if (!this->buckets) {
+        StCheckedAlloc(this->buckets, sizeof(TinyBucket*) * ST_TINY_MAP_CAPACITY);
+        StMemset((void*)this->buckets, 0, sizeof(TinyBucket*) * ST_TINY_MAP_CAPACITY);
+    }
 
-	size_t idx = TinyKey2Idx(hash);
-	if (!this->buckets[idx]) {
-		this->buckets[idx] = StNewTinyBucket(hash, data, size);
-		this->length++;
-		return this->buckets[idx];
-	}
+    size_t idx = TinyKey2Idx(hash);
+    if (!this->buckets[idx]) {
+        this->buckets[idx] = StNewTinyBucket(hash, data, size);
+        this->length++;
+        return this->buckets[idx];
+    }
 
-	TinyBucket* bucket = this->buckets[idx];
-	while (bucket->hash != hash) {
-		if (bucket->next) {
-			bucket = bucket->next;
-		} else {
-			bucket->next = StNewTinyBucket(hash, data, size);
-			this->length++;
-			return bucket->next;
-		}
-	}
+    TinyBucket* bucket = this->buckets[idx];
+    while (bucket->hash != hash) {
+        if (bucket->next) {
+            bucket = bucket->next;
+        } else {
+            bucket->next = StNewTinyBucket(hash, data, size);
+            this->length++;
+            return bucket->next;
+        }
+    }
 
-	StCleanupBucket(bucket);
+    StCleanupBucket(bucket);
 
-	if (bucket->data_size != (size_t)size) {
-		if (bucket->data)
-			StFree(bucket->data);
-		StCheckedAlloc(bucket->data, size);
-		bucket->data_size = size;
-	}
+    if (bucket->data_size != (size_t)size) {
+        if (bucket->data)
+            StFree(bucket->data);
+        StCheckedAlloc(bucket->data, size);
+        bucket->data_size = size;
+    }
 
-	StMemcpy(bucket->data, data, size);
+    StMemcpy(bucket->data, data, size);
 
-	return bucket;
+    return bucket;
 }
 
 TinyBucket* TinyMapFind(const TinyMap* this, TinyHash hash) {
-	if (!this || !this->buckets)
-		return NULL;
+    if (!this || !this->buckets)
+        return NULL;
 
-	TinyBucket* bucket = this->buckets[TinyKey2Idx(hash)];
+    TinyBucket* bucket = this->buckets[TinyKey2Idx(hash)];
 
-	while (bucket) {
-		if (bucket->hash == hash)
-			return bucket;
-		bucket = bucket->next;
-	}
+    while (bucket) {
+        if (bucket->hash == hash)
+            return bucket;
+        bucket = bucket->next;
+    }
 
-	return NULL;
+    return NULL;
 }
 
 char* TinyMapGet(const TinyMap* this, TinyHash hash) {
-	TinyBucket* bucket = TinyMapFind(this, hash);
-	return bucket ? bucket->data : NULL;
+    TinyBucket* bucket = TinyMapFind(this, hash);
+    return bucket ? bucket->data : NULL;
 }
 
 void TinyMapErase(TinyMap* this, TinyHash hash) {
-	if (!this || !this->buckets)
-		return;
+    if (!this || !this->buckets)
+        return;
 
-	size_t idx = TinyKey2Idx(hash);
-	TinyBucket* bucket = this->buckets[idx];
+    size_t idx = TinyKey2Idx(hash);
+    TinyBucket* bucket = this->buckets[idx];
 
-	if (!bucket)
-		return;
+    if (!bucket)
+        return;
 
-	if (bucket->hash == hash) {
-		this->buckets[idx] = bucket->next;
-		FreeSingleBucket(bucket);
-		this->length--;
-		return;
-	}
+    if (bucket->hash == hash) {
+        this->buckets[idx] = bucket->next;
+        FreeSingleBucket(bucket);
+        this->length--;
+        return;
+    }
 
-	while (bucket->next) {
-		if (bucket->next->hash == hash) {
-			bucket->next = bucket->next->next;
-			FreeSingleBucket(bucket->next);
-			this->length--;
-			return;
-		}
-		bucket = bucket->next;
-	}
+    while (bucket->next) {
+        if (bucket->next->hash == hash) {
+            bucket->next = bucket->next->next;
+            FreeSingleBucket(bucket->next);
+            this->length--;
+            return;
+        }
+        bucket = bucket->next;
+    }
 }
 
 bool TinyMapNext(TinyMapIterator* iter) {
-	if (!iter->source || !iter->source->buckets)
-		return false;
+    if (!iter->source || !iter->source->buckets)
+        return false;
 
-	if (iter->bucket_idx > ST_TINY_MAP_CAPACITY)
-		return false;
+    if (iter->bucket_idx > ST_TINY_MAP_CAPACITY)
+        return false;
 
-	if (iter->bucket)
-		iter->bucket = iter->bucket->next;
+    if (iter->bucket)
+        iter->bucket = iter->bucket->next;
 
-	while (!iter->bucket) {
-		iter->bucket = iter->source->buckets[iter->bucket_idx];
-		if (++iter->bucket_idx > ST_TINY_MAP_CAPACITY)
-			return false;
-	}
+    while (!iter->bucket) {
+        iter->bucket = iter->source->buckets[iter->bucket_idx];
+        if (++iter->bucket_idx > ST_TINY_MAP_CAPACITY)
+            return false;
+    }
 
-	iter->data = iter->bucket ? iter->bucket->data : NULL;
+    iter->data = iter->bucket ? iter->bucket->data : NULL;
 
-	return true;
+    return true;
 }
 
 TinyMapIterator TinyMapIter(TinyMap* this) {
-	return (TinyMapIterator){.source = this};
+    return (TinyMapIterator){.source = this};
 }
 
 size_t TinyDLength(const void* this) {
-	return TinyDGetHead(this) ? TinyDGetHead(this)->length : 0;
+    return TinyDGetHead(this) ? TinyDGetHead(this)->length : 0;
 }
 
 size_t TinyDCapacity(const void* this) {
-	return TinyDGetHead(this) ? TinyDGetHead(this)->capacity : 0;
+    return TinyDGetHead(this) ? TinyDGetHead(this)->capacity : 0;
 }
 
 size_t TinyDElementSize(const void* this) {
-	return TinyDGetHead(this) ? TinyDGetHead(this)->elt_size : 0;
+    return TinyDGetHead(this) ? TinyDGetHead(this)->elt_size : 0;
 }
 
 void* MakeTinyDPro(size_t capacity, size_t elt_size) {
-	char* ptr = NULL;
-	StCheckedAlloc(ptr, sizeof(TinyDHead) + elt_size * capacity);
-	ptr += sizeof(TinyDHead);
+    char* ptr = NULL;
+    StCheckedAlloc(ptr, sizeof(TinyDHead) + elt_size * capacity);
+    ptr += sizeof(TinyDHead);
 
-	TinyDGetHead(ptr)->length = 0, TinyDGetHead(ptr)->capacity = capacity;
-	TinyDGetHead(ptr)->elt_size = elt_size;
+    TinyDGetHead(ptr)->length = 0, TinyDGetHead(ptr)->capacity = capacity;
+    TinyDGetHead(ptr)->elt_size = elt_size;
 
-	return ptr;
+    return ptr;
 }
 
 void FreeTinyD(void* this) {
-	if (this)
-		StFree(TinyDGetHead(this));
+    if (this)
+        StFree(TinyDGetHead(this));
 }
 
 void* TinyDAppendPro(void* this, const void* ref) {
-	if (!TinyDGetHead(this))
-		return NULL;
+    if (!TinyDGetHead(this))
+        return NULL;
 
-	char* buf = this;
+    char* buf = this;
 
-	const size_t length = TinyDGetHead(buf)->length, elt_size = TinyDGetHead(buf)->elt_size,
-		     no_cap = TinyDGetHead(buf)->capacity;
+    const size_t length = TinyDGetHead(buf)->length, elt_size = TinyDGetHead(buf)->elt_size,
+                 no_cap = TinyDGetHead(buf)->capacity;
 
-	if (length == no_cap) {
-		const size_t newcap
-			= no_cap ? no_cap * ST_TINY_D_GROWTH_FACTOR : ST_TINY_D_INITIAL_CAPACITY;
+    if (length == no_cap) {
+        const size_t newcap
+            = no_cap ? no_cap * ST_TINY_D_GROWTH_FACTOR : ST_TINY_D_INITIAL_CAPACITY;
 
-		char* tmp = NULL;
-		StCheckedAlloc(tmp, elt_size * newcap + sizeof(TinyDHead));
-		tmp += sizeof(TinyDHead);
+        char* tmp = NULL;
+        StCheckedAlloc(tmp, elt_size * newcap + sizeof(TinyDHead));
+        tmp += sizeof(TinyDHead);
 
-		TinyDGetHead(tmp)->capacity = newcap;
-		TinyDGetHead(tmp)->length = length;
-		TinyDGetHead(tmp)->elt_size = elt_size;
+        TinyDGetHead(tmp)->capacity = newcap;
+        TinyDGetHead(tmp)->length = length;
+        TinyDGetHead(tmp)->elt_size = elt_size;
 
-		StMemcpy(tmp, buf, no_cap * elt_size);
-		FreeTinyD(buf), buf = tmp;
-	}
+        StMemcpy(tmp, buf, no_cap * elt_size);
+        FreeTinyD(buf), buf = tmp;
+    }
 
-	StMemcpy(buf + length * elt_size, ref, elt_size);
-	TinyDGetHead(buf)->length += 1;
+    StMemcpy(buf + length * elt_size, ref, elt_size);
+    TinyDGetHead(buf)->length += 1;
 
-	return buf;
+    return buf;
 }
 
 #undef TinyDGetHead

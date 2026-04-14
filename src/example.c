@@ -2,15 +2,15 @@
 #include "S_tructures.h"
 
 int main(int argc, char* argv[]) {
-	(void)argc, (void)argv;
+    (void)argc, (void)argv;
 
-	TinyMap map = {0};
-	TinyDictPut(&map, "greeting", "hello", strlen("hello!") + 1);
-	TinyDictPut(&map, "name", "Bob!", strlen("Bob!") + 1);
+    TinyMap map = {0};
+    TinyDictPut(&map, "greeting", "hello", strlen("hello!") + 1);
+    TinyDictPut(&map, "name", "Bob!", strlen("Bob!") + 1);
 
-	TINY_MAP_FOREACH (&map, it)
-		printf("%s\n", (char*)it.data);
+    TINY_MAP_FOREACH (&map, it)
+        printf("%s\n", (char*)it.data);
 
-	FreeTinyMap(&map);
-	return EXIT_SUCCESS;
+    FreeTinyMap(&map);
+    return EXIT_SUCCESS;
 }
