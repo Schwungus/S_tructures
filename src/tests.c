@@ -107,6 +107,8 @@ static void map_counts_length_correctly() {
         TinyMapPut(&map, i, &data, sizeof(data));
     }
 
+    assert_eq(TinyMapLength(&map), entries_count);
+
     for (size_t i = 0; i < entries_count; i++)
         TinyMapErase(&map, i);
 
