@@ -21,12 +21,11 @@
 /// Otherwise, if 8 bytes is enough, you can use `StStrKey`.
 typedef uint64_t TinyHash;
 
-/// An internal storage cell for `TinyMap`s. Essentially a singly linked list.
+/// An internal storage cell for `TinyMap`s.
 typedef struct TinyBucket {
     TinyHash hash;
     void *data, (*cleanup)(void*);
     size_t data_size;
-    struct TinyBucket* next;
 } TinyBucket;
 
 /// A tiny hashmap-like structure indexed with 8-byte keys.
@@ -38,8 +37,8 @@ typedef struct {
 /// An iterator over tiny-maps.
 typedef struct {
     TinyMap* source;
+    size_t hash_idx, bucket_idx;
     TinyBucket* bucket;
-    size_t bucket_idx;
     void* data;
 } TinyMapIterator;
 
@@ -167,9 +166,9 @@ void* TinyDPop(void* this);
 
 #ifndef StLog
 #include <stdio.h>
-#define StLog(...)                                                                                 \
+#define StLog(msg, ...)                                                                            \
     do {                                                                                           \
-        fprintf(stdout, "[S_tr]: %c" __VA_ARGS__, '\n');                                           \
+        fprintf(stdout, "[S_tr]: " msg "\n", ##__VA_ARGS__);                                       \
         fflush(stdout);                                                                            \
     } while (0)
 #endif
@@ -239,21 +238,6 @@ static const TinyHash StShuffleKey(const TinyHash hash) {
     return hash ^ (hash >> (4 * sizeof(hash)));
 }
 
-static TinyBucket* StNewTinyBucket(TinyHash hash, const void* data, int size) {
-    if (size < 1) { // TODO: bar behind a debug build check?
-        StLog("Requested bucket size 0; catching on fire");
-        return NULL;
-    }
-
-    TinyBucket* this = NULL;
-    StCheckedAlloc(this, sizeof(*this));
-    this->cleanup = NULL, this->next = NULL, this->hash = hash;
-    this->data_size = size, this->data = NULL;
-    StCheckedAlloc(this->data, this->data_size);
-    StMemcpy(this->data, data, this->data_size);
-    return this;
-}
-
 TinyHash StStrKey(const char* s) {
     static char buf[sizeof(TinyHash)] = {0};
     if (!s)
@@ -278,23 +262,15 @@ TinyHash StHashStr(const char* s) {
     return hash;
 }
 
-static void StCleanupBucket(TinyBucket* this) {
+static void StCleanupBucket(const TinyBucket* this) {
     if (this->cleanup && this->data)
         this->cleanup(this->data);
 }
 
-static void FreeSingleBucket(TinyBucket* this) {
+static void FreeTinyBucket(const TinyBucket* this) {
     StCleanupBucket(this);
     if (this->data)
         StFree(this->data);
-    StFree(this);
-}
-
-static void FreeBucketChain(TinyBucket* this) {
-    if (this) {
-        FreeBucketChain(this->next);
-        FreeSingleBucket(this);
-    }
 }
 
 void FreeTinyMap(TinyMap* this) {
@@ -302,8 +278,12 @@ void FreeTinyMap(TinyMap* this) {
         return;
 
     if (this->buckets) {
-        for (int i = 0; i < ST_TINY_MAP_CAPACITY; i++)
-            FreeBucketChain(this->buckets[i]);
+        for (int i = 0; i < ST_TINY_MAP_CAPACITY; i++) {
+            for (int j = 0; j < TinyDLength(this->buckets[i]); j++)
+                FreeTinyBucket(&this->buckets[i][j]);
+            FreeTinyD(this->buckets[i]);
+        }
+
         StFree((void*)this->buckets), this->buckets = NULL;
     }
 
@@ -315,54 +295,60 @@ size_t TinyMapLength(const TinyMap* this) {
 }
 
 TinyBucket* TinyMapPut(TinyMap* this, TinyHash hash, const void* data, int size) {
+    if (size < 1) { // TODO: bar behind a debug build check?
+        StLog("Requested bucket size 0; catching on fire");
+        return NULL;
+    }
+
     if (!this->buckets) {
         StCheckedAlloc(this->buckets, sizeof(TinyBucket*) * ST_TINY_MAP_CAPACITY);
         StMemset((void*)this->buckets, 0, sizeof(TinyBucket*) * ST_TINY_MAP_CAPACITY);
     }
 
-    size_t idx = TinyKey2Idx(hash);
-    if (!this->buckets[idx]) {
-        this->buckets[idx] = StNewTinyBucket(hash, data, size);
-        this->length++;
-        return this->buckets[idx];
-    }
+    const size_t idx = TinyKey2Idx(hash);
 
-    TinyBucket* bucket = this->buckets[idx];
-    while (bucket->hash != hash) {
-        if (bucket->next) {
-            bucket = bucket->next;
-        } else {
-            bucket->next = StNewTinyBucket(hash, data, size);
-            this->length++;
-            return bucket->next;
+    if (!this->buckets[idx])
+        this->buckets[idx] = MakeTinyD(TinyBucket);
+
+    for (size_t i = 0; i < TinyDLength(this->buckets[idx]); i++) {
+        TinyBucket* bucket = &this->buckets[idx][i];
+
+        if (bucket->hash == hash) {
+            StCleanupBucket(bucket);
+
+            if (bucket->data_size != (size_t)size) {
+                if (bucket->data)
+                    StFree(bucket->data);
+                StCheckedAlloc(bucket->data, size);
+                bucket->data_size = size;
+            }
+
+            StMemcpy(bucket->data, data, size);
+
+            return bucket;
         }
     }
 
-    StCleanupBucket(bucket);
+    TinyBucket bucket = {0};
+    bucket.hash = hash, bucket.data_size = size;
+    StCheckedAlloc(bucket.data, bucket.data_size);
+    StMemcpy(bucket.data, data, bucket.data_size);
 
-    if (bucket->data_size != (size_t)size) {
-        if (bucket->data)
-            StFree(bucket->data);
-        StCheckedAlloc(bucket->data, size);
-        bucket->data_size = size;
-    }
+    this->buckets[idx] = TinyDAppendPro(this->buckets[idx], &bucket);
+    this->length++;
 
-    StMemcpy(bucket->data, data, size);
-
-    return bucket;
+    return &this->buckets[idx][TinyDLength(this->buckets[idx]) - 1];
 }
 
 TinyBucket* TinyMapFind(const TinyMap* this, TinyHash hash) {
     if (!this || !this->buckets)
         return NULL;
 
-    TinyBucket* bucket = this->buckets[TinyKey2Idx(hash)];
+    TinyBucket* buckets = this->buckets[TinyKey2Idx(hash)];
 
-    while (bucket) {
-        if (bucket->hash == hash)
-            return bucket;
-        bucket = bucket->next;
-    }
+    for (size_t i = 0; i < TinyDLength(buckets); i++)
+        if (buckets[i].hash == hash)
+            return &buckets[i];
 
     return NULL;
 }
@@ -376,27 +362,21 @@ void TinyMapErase(TinyMap* this, TinyHash hash) {
     if (!this || !this->buckets)
         return;
 
-    size_t idx = TinyKey2Idx(hash);
-    TinyBucket* bucket = this->buckets[idx];
+    const size_t idx = TinyKey2Idx(hash);
+    TinyBucket* const buckets = this->buckets[idx];
+    const size_t length = TinyDLength(buckets);
 
-    if (!bucket)
-        return;
+    for (size_t i = 0; i < length; i++) {
+        if (buckets[i].hash == hash) {
+            TinyBucket cur = buckets[i];
+            FreeTinyBucket(&cur);
 
-    if (bucket->hash == hash) {
-        this->buckets[idx] = bucket->next;
-        FreeSingleBucket(bucket);
-        this->length--;
-        return;
-    }
-
-    while (bucket->next) {
-        if (bucket->next->hash == hash) {
-            bucket->next = bucket->next->next;
-            FreeSingleBucket(bucket->next);
+            buckets[i] = buckets[length - 1];
+            this->buckets[idx] = TinyDPop(buckets);
             this->length--;
-            return;
+
+            break;
         }
-        bucket = bucket->next;
     }
 }
 
@@ -404,18 +384,14 @@ bool TinyMapNext(TinyMapIterator* iter) {
     if (!iter->source || !iter->source->buckets)
         return false;
 
-    if (iter->bucket_idx > ST_TINY_MAP_CAPACITY)
+    while (iter->hash_idx < ST_TINY_MAP_CAPACITY
+           && iter->bucket_idx >= TinyDLength(iter->source->buckets[iter->hash_idx]))
+        iter->hash_idx++, iter->bucket_idx = 0;
+
+    if (iter->hash_idx >= ST_TINY_MAP_CAPACITY)
         return false;
 
-    if (iter->bucket)
-        iter->bucket = iter->bucket->next;
-
-    while (!iter->bucket) {
-        iter->bucket = iter->source->buckets[iter->bucket_idx];
-        if (++iter->bucket_idx > ST_TINY_MAP_CAPACITY)
-            return false;
-    }
-
+    iter->bucket = &iter->source->buckets[iter->hash_idx][iter->bucket_idx++];
     iter->data = iter->bucket ? iter->bucket->data : NULL;
 
     return true;
