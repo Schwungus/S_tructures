@@ -196,7 +196,7 @@ ST_NORETURN void StDie()
 
 #define StCheckedAlloc(var, size)                                                                  \
     do {                                                                                           \
-        (var) = (__typeof__((var)))StAlloc((size));                                                \
+        *(void**)&(var) = StAlloc((size));                                                         \
         if (!(var))                                                                                \
             StOutOfJuice();                                                                        \
     } while (0)
@@ -310,15 +310,20 @@ TinyBucket* TinyMapPut(TinyMap* this, TinyHash hash, const void* data, int size)
     if (!this->buckets[idx])
         this->buckets[idx] = MakeTinyD(TinyBucket);
 
-    for (size_t i = 0; i < TinyDLength(this->buckets[idx]); i++) {
+    const size_t len = TinyDLength(this->buckets[idx]);
+
+    for (size_t i = 0; i < len; i++) {
         TinyBucket* bucket = &this->buckets[idx][i];
 
         if (bucket->hash == hash) {
             StCleanupBucket(bucket);
 
             if (bucket->data_size != (size_t)size) {
-                if (bucket->data)
+                if (bucket->data) {
                     StFree(bucket->data);
+                    bucket->data = NULL;
+                }
+
                 StCheckedAlloc(bucket->data, size);
                 bucket->data_size = size;
             }
@@ -337,7 +342,7 @@ TinyBucket* TinyMapPut(TinyMap* this, TinyHash hash, const void* data, int size)
     this->buckets[idx] = TinyDAppendPro(this->buckets[idx], &bucket);
     this->length++;
 
-    return &this->buckets[idx][TinyDLength(this->buckets[idx]) - 1];
+    return &this->buckets[idx][len];
 }
 
 TinyBucket* TinyMapFind(const TinyMap* this, TinyHash hash) {
@@ -354,7 +359,7 @@ TinyBucket* TinyMapFind(const TinyMap* this, TinyHash hash) {
 }
 
 char* TinyMapGet(const TinyMap* this, TinyHash hash) {
-    TinyBucket* bucket = TinyMapFind(this, hash);
+    TinyBucket* const bucket = TinyMapFind(this, hash);
     return bucket ? bucket->data : NULL;
 }
 
@@ -368,9 +373,7 @@ void TinyMapErase(TinyMap* this, TinyHash hash) {
 
     for (size_t i = 0; i < length; i++) {
         if (buckets[i].hash == hash) {
-            TinyBucket cur = buckets[i];
-            FreeTinyBucket(&cur);
-
+            FreeTinyBucket(&buckets[i]);
             buckets[i] = buckets[length - 1];
             this->buckets[idx] = TinyDPop(buckets);
             this->length--;
