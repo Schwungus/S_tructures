@@ -138,6 +138,15 @@ void* TinyDShrink(void* this, size_t newlen);
 /// Shaves the last appended value off the tiny-D.
 void* TinyDPop(void* this);
 
+/// Alias for `TinyDPop` to match with `TinyDPopFront`.
+#define TinyDPopBack TinyDPop
+
+/// Removes the first element.
+void* TinyDPopFront(void* this);
+
+/// Pops the element at index `idx` and shifts the rest accordingly.
+void* TinyDErase(void* this, size_t idx);
+
 #ifdef S_TRUCTURES_IMPLEMENTATION
 
 #if !defined(StAlloc) && !defined(StFree)
@@ -442,6 +451,24 @@ void* TinyDPop(void* this) {
     if (TinyDLength(this) > 0)
         return TinyDShrink(this, TinyDLength(this) - 1);
     return this;
+}
+
+void* TinyDPopFront(void* this) {
+    if (TinyDLength(this) > 0)
+        return TinyDErase(this, 0);
+    return this;
+}
+
+void* TinyDErase(void* this, size_t idx) {
+    if (idx >= TinyDLength(this))
+        return this;
+
+    const size_t size = TinyDElementSize(this);
+
+    for (size_t i = idx; i < TinyDLength(this); i++)
+        StMemcpy(this + i * size, this + (i + 1) * size, size);
+
+    return TinyDPop(this);
 }
 
 void* TinyDAppendPro(void* this, const void* ref) {

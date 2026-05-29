@@ -177,27 +177,70 @@ static void d_append_doesnt_crash() {
     FreeTinyD(da);
 }
 
-static void d_pops() {
+static void d_pops_back() {
     int* da = MakeTinyD(int);
 
     da = TinyDAppend(da, 123);
     assert_eq(da[0], 123);
     assert_eq(TinyDLength(da), 1);
 
+    da = TinyDAppend(da, 777);
+    assert_eq(da[1], 777);
+    assert_eq(TinyDLength(da), 2);
+
     da = TinyDPop(da);
     assert_eq(da[0], 123);
+    assert_eq(TinyDLength(da), 1);
+
+    da = TinyDPop(da);
     assert_eq(TinyDLength(da), 0);
 
+    FreeTinyD(da);
+}
+
+static void d_pops_front() {
+    int* da = MakeTinyD(int);
+
+    da = TinyDAppend(da, 123);
+    assert_eq(da[0], 123);
+    assert_eq(TinyDLength(da), 1);
+
     da = TinyDAppend(da, 777);
+    assert_eq(da[1], 777);
+    assert_eq(TinyDLength(da), 2);
+
+    da = TinyDPopFront(da);
     assert_eq(da[0], 777);
     assert_eq(TinyDLength(da), 1);
+
+    da = TinyDPopFront(da);
+    assert_eq(TinyDLength(da), 0);
+
+    FreeTinyD(da);
+}
+
+static void d_erases() {
+    int* da = MakeTinyD(int);
+
+    for (int i = 0; i < 10; i++)
+        da = TinyDAppend(da, i);
+
+    assert_eq(da[5], 5);
+    assert_eq(TinyDLength(da), 10);
+
+    da = TinyDErase(da, 5);
+
+    assert_eq(da[5], 6);
+    assert_eq(TinyDLength(da), 9);
 
     FreeTinyD(da);
 }
 
 static void test_tinyDs() {
     run_test(d_append_doesnt_crash);
-    run_test(d_pops);
+    run_test(d_pops_back);
+    run_test(d_pops_front);
+    run_test(d_erases);
 }
 
 int main(int argc, char* argv[]) {
