@@ -171,6 +171,7 @@ static void d_append_doesnt_crash() {
     for (int i = 0; i < count; i++)
         da = TinyDAppend(da, i);
 
+    assert_eq(TinyDLength(da), count);
     assert_eq(da[3], 3);
     assert_eq(da[count - 5], count - 5);
 
@@ -181,16 +182,16 @@ static void d_pops_back() {
     int* da = MakeTinyD(int);
 
     da = TinyDAppend(da, 123);
-    assert_eq(da[0], 123);
     assert_eq(TinyDLength(da), 1);
+    assert_eq(da[0], 123);
 
     da = TinyDAppend(da, 777);
-    assert_eq(da[1], 777);
     assert_eq(TinyDLength(da), 2);
+    assert_eq(da[1], 777);
 
     da = TinyDPop(da);
-    assert_eq(da[0], 123);
     assert_eq(TinyDLength(da), 1);
+    assert_eq(da[0], 123);
 
     da = TinyDPop(da);
     assert_eq(TinyDLength(da), 0);
@@ -202,16 +203,16 @@ static void d_pops_front() {
     int* da = MakeTinyD(int);
 
     da = TinyDAppend(da, 123);
-    assert_eq(da[0], 123);
     assert_eq(TinyDLength(da), 1);
+    assert_eq(da[0], 123);
 
     da = TinyDAppend(da, 777);
-    assert_eq(da[1], 777);
     assert_eq(TinyDLength(da), 2);
+    assert_eq(da[1], 777);
 
     da = TinyDPopFront(da);
-    assert_eq(da[0], 777);
     assert_eq(TinyDLength(da), 1);
+    assert_eq(da[0], 777);
 
     da = TinyDPopFront(da);
     assert_eq(TinyDLength(da), 0);
@@ -225,13 +226,14 @@ static void d_erases() {
     for (int i = 0; i < 10; i++)
         da = TinyDAppend(da, i);
 
-    assert_eq(da[5], 5);
     assert_eq(TinyDLength(da), 10);
+    assert_eq(da[5], 5);
 
     da = TinyDErase(da, 5);
 
-    assert_eq(da[5], 6);
     assert_eq(TinyDLength(da), 9);
+    for (int i = 5; i < 9; i++)
+        assert_eq(da[i], i + 1);
 
     FreeTinyD(da);
 }
