@@ -6,9 +6,6 @@
     "clangd.enableCodeCompletion": true,
     "cmake.generator": "Ninja",
     "cmake.exportCompileCommandsFile": true,
-    "clangd.arguments": [
-        "--header-insertion=never"
-    ],
     "files.exclude": {
         ".cache": true
     },

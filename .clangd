@@ -2,3 +2,10 @@ If:
   PathMatch: include/S_tructures\.h
 CompileFlags:
   Add: [-D, S_TRUCTURES_IMPLEMENTATION]
+---
+CompileFlags:
+  Remove: [-fdeps-format=*, -fmodules-ts, -fmodule-mapper=*]
+Diagnostics:
+  Suppress: [keyword_as_parameter, invalid_this_use]
+Completion:
+  HeaderInsertion: Never
