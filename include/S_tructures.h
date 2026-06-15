@@ -473,14 +473,15 @@ void* TinyDErase(void* _this, size_t idx) {
     return TinyDPop(this);
 }
 
-void* TinyDAppendPro(void* this, const void* ref) {
+void* TinyDAppendPro(void* _this, const void* ref) {
+    char* this = _this;
+
     if (!TinyDGetHead(this))
         return NULL;
 
-    char* buf = this;
-
-    const size_t length = TinyDGetHead(buf)->length, elt_size = TinyDGetHead(buf)->elt_size,
-                 no_cap = TinyDGetHead(buf)->capacity;
+    const size_t length = TinyDGetHead(this)->length;
+    const size_t elt_size = TinyDGetHead(this)->elt_size;
+    const size_t no_cap = TinyDGetHead(this)->capacity;
 
     if (length == no_cap) {
         const size_t newcap
@@ -494,14 +495,14 @@ void* TinyDAppendPro(void* this, const void* ref) {
         TinyDGetHead(tmp)->length = length;
         TinyDGetHead(tmp)->elt_size = elt_size;
 
-        StMemcpy(tmp, buf, no_cap * elt_size);
-        FreeTinyD(buf), buf = tmp;
+        StMemcpy(tmp, this, no_cap * elt_size);
+        FreeTinyD(this), this = tmp;
     }
 
-    StMemcpy(buf + length * elt_size, ref, elt_size);
-    TinyDGetHead(buf)->length += 1;
+    StMemcpy(this + length * elt_size, ref, elt_size);
+    TinyDGetHead(this)->length += 1;
 
-    return buf;
+    return this;
 }
 
 #undef TinyDGetHead
