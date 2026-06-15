@@ -459,7 +459,8 @@ void* TinyDPopFront(void* this) {
     return this;
 }
 
-void* TinyDErase(void* this, size_t idx) {
+void* TinyDErase(void* _this, size_t idx) {
+    char* this = _this; // GROSS HACK: MSVC fix
     if (idx >= TinyDLength(this))
         return this;
 
