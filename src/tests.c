@@ -21,17 +21,17 @@ static void counted_free(void* ptr) {
 #define run_test(fn) run_test_fr(#fn, fn)
 static void run_test_fr(const char* name, void (*fn)()) {
     static int test_counter = 0;
-    printf("TEST #%d '%s':\n\n", ++test_counter, name);
+    printf("TEST #%d '%s': ", ++test_counter, name);
     fflush(stdout);
 
     malloc_counter = 0;
     fn();
     if (malloc_counter) {
-        printf("FAIL: leaked %d allocations\n", malloc_counter);
+        printf("FAIL\nleaked %d allocations\n", malloc_counter);
         fflush(stdout), exit(EXIT_FAILURE);
     }
 
-    printf("PASS\n\n");
+    printf("PASS\n");
     fflush(stdout);
 }
 
