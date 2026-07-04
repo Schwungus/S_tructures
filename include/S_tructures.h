@@ -59,46 +59,46 @@ TinyHash StStrKey(const char* s);
 TinyHash StHashStr(const char* s);
 
 /// Cleanup a `TinyMap`.
-void FreeTinyMap(TinyMap* that);
+void FreeTinyMap(TinyMap* self);
 
 /// Returns the amount of key-value pairs inside this tiny-map.
-size_t TinyMapLength(const TinyMap* that);
+size_t TinyMapLength(const TinyMap* self);
 
 /// Insert data into the tinymap. Allocates a chunk of memory and copies data
 /// from input.
 ///
 /// This also returns the resulting bucket in case you need to set a cleanup
 /// function.
-TinyBucket* TinyMapPut(TinyMap* that, TinyHash hash, const void* data, int size);
+TinyBucket* TinyMapPut(TinyMap* self, TinyHash hash, const void* data, int size);
 
 /// An shorthand for `TinyMapPut` which accepts string keys and hashes them for you.
-#define TinyDictPut(that, hash, data, size) TinyMapPut((that), StHashStr((hash)), (data), (size))
+#define TinyDictPut(self, hash, data, size) TinyMapPut((self), StHashStr((hash)), (data), (size))
 
 /// Find the bucket by input key, or return `NULL` if there is none.
-TinyBucket* TinyMapFind(const TinyMap* that, TinyHash hash);
+TinyBucket* TinyMapFind(const TinyMap* self, TinyHash hash);
 
 /// An shorthand for `TinyMapFind` which accepts string keys and hashes them for you.
-#define TinyDictFind(that, hash) TinyMapFind((that), StHashStr((hash)))
+#define TinyDictFind(self, hash) TinyMapFind((self), StHashStr((hash)))
 
 /// Returns a pointer to an entry's data, if any. Spits out a `NULL` otherwise.
 ///
 /// If you need to check the entry's actual size, use the full-form `TinyMapFind`.
-char* TinyMapGet(const TinyMap* that, TinyHash hash);
+char* TinyMapGet(const TinyMap* self, TinyHash hash);
 
 /// An shorthand for `TinyMapGet` which accepts string keys and hashes them for you.
-#define TinyDictGet(that, hash) TinyMapGet((that), StHashStr((hash)))
+#define TinyDictGet(self, hash) TinyMapGet((self), StHashStr((hash)))
 
 /// Free the bucket and the data associated with a key.
-void TinyMapErase(TinyMap* that, TinyHash hash);
+void TinyMapErase(TinyMap* self, TinyHash hash);
 
 /// An shorthand for `TinyMapErase` which accepts string keys and hashes them for you.
-#define TinyDictErase(that, hash) TinyMapErase((that), StHashStr((hash)))
+#define TinyDictErase(self, hash) TinyMapErase((self), StHashStr((hash)))
 
 /// Creates an iterator over the values of a tiny-map.
 ///
 /// Pointer-cast and dereference `.data` to get the value of the current entry. Cast `.bucket` to
 /// `TinyBucket` to set/unset a cleanup function.
-TinyMapIterator TinyMapIter(TinyMap* that);
+TinyMapIterator TinyMapIter(TinyMap* self);
 
 /// Returns true and advances the iterator if there is an entry available inside the iterable.
 /// Otherwise returns false.
@@ -112,30 +112,30 @@ void* MakeTinyDPro(size_t capacity, size_t elt_size);
 #define MakeTinyD(T) ((T*)MakeTinyDPro(ST_TINY_D_INITIAL_CAPACITY, sizeof(T)))
 
 /// Properly cleans up a tiny dynamic-array and its header.
-void FreeTinyD(void* that);
+void FreeTinyD(void* self);
 
 /// Returns a specific property of a tiny-D.
-size_t TinyDLength(const void* that), TinyDCapacity(const void* that),
-    TinyDElementSize(const void* that);
+size_t TinyDLength(const void* self), TinyDCapacity(const void* self),
+    TinyDElementSize(const void* self);
 
 /// Appends an element to the dynamic-array, growing it if necessary. DO NOT FORGET to assign the
 /// result of this to the array you passed in.
-void* TinyDPush(void* this, const void* ref);
+void* TinyDPush(void* self, const void* ref);
 
 /// Shrinks a tiny-D's internal length counter to the specified value.
-void* TinyDShrink(void* that, size_t newlen);
+void* TinyDShrink(void* self, size_t newlen);
 
 /// Shaves the last appended value off the tiny-D.
-void* TinyDPop(void* that);
+void* TinyDPop(void* self);
 
 /// Alias for `TinyDPop` to match with `TinyDPopFront`.
 #define TinyDPopBack TinyDPop
 
 /// Removes the first element.
-void* TinyDPopFront(void* that);
+void* TinyDPopFront(void* self);
 
 /// Pops the element at index `idx` and shifts the rest accordingly.
-void* TinyDErase(void* that, size_t idx);
+void* TinyDErase(void* self, size_t idx);
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
 
@@ -204,13 +204,13 @@ ST_NORETURN void StDie()
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
 #define ST_MAKE_MAP_GET(suffix, type)                                                              \
-    type TinyMapGet##suffix(const TinyMap* that, TinyHash hash) {                                  \
-        const void* data = TinyMapGet(that, hash);                                                 \
+    type TinyMapGet##suffix(const TinyMap* self, TinyHash hash) {                                  \
+        const void* data = TinyMapGet(self, hash);                                                 \
         return data ? *(type*)data : 0;                                                            \
     }                                                                                              \
                                                                                                    \
-    type TinyDictGet##suffix(const TinyMap* that, const char* key) {                               \
-        const void* data = TinyMapGet(that, StHashStr(key));                                       \
+    type TinyDictGet##suffix(const TinyMap* self, const char* key) {                               \
+        const void* data = TinyMapGet(self, StHashStr(key));                                       \
         return data ? *(type*)data : 0;                                                            \
     }
 #else
@@ -261,58 +261,58 @@ TinyHash StHashStr(const char* s) {
     return hash;
 }
 
-static void StCleanupBucket(const TinyBucket* that) {
-    if (that->cleanup && that->data)
-        that->cleanup(that->data);
+static void StCleanupBucket(const TinyBucket* self) {
+    if (self->cleanup && self->data)
+        self->cleanup(self->data);
 }
 
-static void FreeTinyBucket(const TinyBucket* that) {
-    StCleanupBucket(that);
-    if (that->data)
-        StFree(that->data);
+static void FreeTinyBucket(const TinyBucket* self) {
+    StCleanupBucket(self);
+    if (self->data)
+        StFree(self->data);
 }
 
-void FreeTinyMap(TinyMap* that) {
-    if (!that)
+void FreeTinyMap(TinyMap* self) {
+    if (!self)
         return;
 
-    if (that->buckets) {
+    if (self->buckets) {
         for (int i = 0; i < ST_TINY_MAP_CAPACITY; i++) {
-            for (int j = 0; j < TinyDLength(that->buckets[i]); j++)
-                FreeTinyBucket(&that->buckets[i][j]);
-            FreeTinyD(that->buckets[i]);
+            for (int j = 0; j < TinyDLength(self->buckets[i]); j++)
+                FreeTinyBucket(&self->buckets[i][j]);
+            FreeTinyD(self->buckets[i]);
         }
 
-        StFree((void*)that->buckets), that->buckets = NULL;
+        StFree((void*)self->buckets), self->buckets = NULL;
     }
 
-    that->length = 0;
+    self->length = 0;
 }
 
-size_t TinyMapLength(const TinyMap* that) {
-    return that->length;
+size_t TinyMapLength(const TinyMap* self) {
+    return self->length;
 }
 
-TinyBucket* TinyMapPut(TinyMap* that, TinyHash hash, const void* data, int size) {
+TinyBucket* TinyMapPut(TinyMap* self, TinyHash hash, const void* data, int size) {
     if (size < 1) { // TODO: bar behind a debug build check?
         StLog("Requested bucket size 0; catching on fire");
         return NULL;
     }
 
-    if (!that->buckets) {
-        StCheckedAlloc(that->buckets, sizeof(TinyBucket*) * ST_TINY_MAP_CAPACITY);
-        StMemset((void*)that->buckets, 0, sizeof(TinyBucket*) * ST_TINY_MAP_CAPACITY);
+    if (!self->buckets) {
+        StCheckedAlloc(self->buckets, sizeof(TinyBucket*) * ST_TINY_MAP_CAPACITY);
+        StMemset((void*)self->buckets, 0, sizeof(TinyBucket*) * ST_TINY_MAP_CAPACITY);
     }
 
     const size_t idx = TinyKey2Idx(hash);
 
-    if (!that->buckets[idx])
-        that->buckets[idx] = MakeTinyD(TinyBucket);
+    if (!self->buckets[idx])
+        self->buckets[idx] = MakeTinyD(TinyBucket);
 
-    const size_t len = TinyDLength(that->buckets[idx]);
+    const size_t len = TinyDLength(self->buckets[idx]);
 
     for (size_t i = 0; i < len; i++) {
-        TinyBucket* bucket = &that->buckets[idx][i];
+        TinyBucket* bucket = &self->buckets[idx][i];
 
         if (bucket->hash == hash) {
             StCleanupBucket(bucket);
@@ -338,17 +338,17 @@ TinyBucket* TinyMapPut(TinyMap* that, TinyHash hash, const void* data, int size)
     StCheckedAlloc(bucket.data, bucket.data_size);
     StMemcpy(bucket.data, data, bucket.data_size);
 
-    that->buckets[idx] = (TinyBucket*)TinyDPush(that->buckets[idx], &bucket);
-    that->length++;
+    self->buckets[idx] = (TinyBucket*)TinyDPush(self->buckets[idx], &bucket);
+    self->length++;
 
-    return &that->buckets[idx][len];
+    return &self->buckets[idx][len];
 }
 
-TinyBucket* TinyMapFind(const TinyMap* that, TinyHash hash) {
-    if (!that || !that->buckets)
+TinyBucket* TinyMapFind(const TinyMap* self, TinyHash hash) {
+    if (!self || !self->buckets)
         return NULL;
 
-    TinyBucket* buckets = that->buckets[TinyKey2Idx(hash)];
+    TinyBucket* buckets = self->buckets[TinyKey2Idx(hash)];
 
     for (size_t i = 0; i < TinyDLength(buckets); i++)
         if (buckets[i].hash == hash)
@@ -357,25 +357,25 @@ TinyBucket* TinyMapFind(const TinyMap* that, TinyHash hash) {
     return NULL;
 }
 
-char* TinyMapGet(const TinyMap* that, TinyHash hash) {
-    TinyBucket* const bucket = TinyMapFind(that, hash);
+char* TinyMapGet(const TinyMap* self, TinyHash hash) {
+    TinyBucket* const bucket = TinyMapFind(self, hash);
     return bucket ? (char*)bucket->data : NULL;
 }
 
-void TinyMapErase(TinyMap* that, TinyHash hash) {
-    if (!that || !that->buckets)
+void TinyMapErase(TinyMap* self, TinyHash hash) {
+    if (!self || !self->buckets)
         return;
 
     const size_t idx = TinyKey2Idx(hash);
-    TinyBucket* const buckets = that->buckets[idx];
+    TinyBucket* const buckets = self->buckets[idx];
     const size_t length = TinyDLength(buckets);
 
     for (size_t i = 0; i < length; i++) {
         if (buckets[i].hash == hash) {
             FreeTinyBucket(&buckets[i]);
             buckets[i] = buckets[length - 1];
-            that->buckets[idx] = (TinyBucket*)TinyDPop(buckets);
-            that->length--;
+            self->buckets[idx] = (TinyBucket*)TinyDPop(buckets);
+            self->length--;
 
             break;
         }
@@ -399,20 +399,20 @@ bool TinyMapNext(TinyMapIterator* iter) {
     return true;
 }
 
-TinyMapIterator TinyMapIter(TinyMap* that) {
-    return (TinyMapIterator){.source = that};
+TinyMapIterator TinyMapIter(TinyMap* self) {
+    return (TinyMapIterator){.source = self};
 }
 
-size_t TinyDLength(const void* that) {
-    return TinyDGetHead(that) ? TinyDGetHead(that)->length : 0;
+size_t TinyDLength(const void* self) {
+    return TinyDGetHead(self) ? TinyDGetHead(self)->length : 0;
 }
 
-size_t TinyDCapacity(const void* that) {
-    return TinyDGetHead(that) ? TinyDGetHead(that)->capacity : 0;
+size_t TinyDCapacity(const void* self) {
+    return TinyDGetHead(self) ? TinyDGetHead(self)->capacity : 0;
 }
 
-size_t TinyDElementSize(const void* that) {
-    return TinyDGetHead(that) ? TinyDGetHead(that)->elt_size : 0;
+size_t TinyDElementSize(const void* self) {
+    return TinyDGetHead(self) ? TinyDGetHead(self)->elt_size : 0;
 }
 
 void* MakeTinyDPro(size_t capacity, size_t elt_size) {
@@ -426,52 +426,52 @@ void* MakeTinyDPro(size_t capacity, size_t elt_size) {
     return ptr;
 }
 
-void FreeTinyD(void* that) {
-    if (that)
-        StFree(TinyDGetHead(that));
+void FreeTinyD(void* self) {
+    if (self)
+        StFree(TinyDGetHead(self));
 }
 
-void* TinyDShrink(void* that, size_t newlen) {
-    if (that && newlen < TinyDLength(that))
-        TinyDGetHead(that)->length = newlen;
-    return that;
+void* TinyDShrink(void* self, size_t newlen) {
+    if (self && newlen < TinyDLength(self))
+        TinyDGetHead(self)->length = newlen;
+    return self;
 }
 
-void* TinyDPop(void* that) {
-    if (TinyDLength(that) > 0)
-        return TinyDShrink(that, TinyDLength(that) - 1);
-    return that;
+void* TinyDPop(void* self) {
+    if (TinyDLength(self) > 0)
+        return TinyDShrink(self, TinyDLength(self) - 1);
+    return self;
 }
 
-void* TinyDPopFront(void* that) {
-    if (TinyDLength(that) > 0)
-        return TinyDErase(that, 0);
-    return that;
+void* TinyDPopFront(void* self) {
+    if (TinyDLength(self) > 0)
+        return TinyDErase(self, 0);
+    return self;
 }
 
-void* TinyDErase(void* _this, size_t idx) {
-    char* that = (char*)_this;
+void* TinyDErase(void* _self, size_t idx) {
+    char* self = (char*)_self;
 
-    if (idx >= TinyDLength(that))
-        return that;
+    if (idx >= TinyDLength(self))
+        return self;
 
-    const size_t size = TinyDElementSize(that);
+    const size_t size = TinyDElementSize(self);
 
-    for (size_t i = idx; i < TinyDLength(that); i++)
-        StMemcpy(that + i * size, that + (i + 1) * size, size);
+    for (size_t i = idx; i < TinyDLength(self); i++)
+        StMemcpy(self + i * size, self + (i + 1) * size, size);
 
-    return TinyDPop(that);
+    return TinyDPop(self);
 }
 
-void* TinyDPush(void* _this, const void* ref) {
-    char* that = (char*)_this;
+void* TinyDPush(void* _self, const void* ref) {
+    char* self = (char*)_self;
 
-    if (!TinyDGetHead(that))
+    if (!TinyDGetHead(self))
         return NULL;
 
-    const size_t length = TinyDGetHead(that)->length;
-    const size_t elt_size = TinyDGetHead(that)->elt_size;
-    const size_t no_cap = TinyDGetHead(that)->capacity;
+    const size_t length = TinyDGetHead(self)->length;
+    const size_t elt_size = TinyDGetHead(self)->elt_size;
+    const size_t no_cap = TinyDGetHead(self)->capacity;
 
     if (length == no_cap) {
         const size_t newcap
@@ -485,14 +485,14 @@ void* TinyDPush(void* _this, const void* ref) {
         TinyDGetHead(tmp)->length = length;
         TinyDGetHead(tmp)->elt_size = elt_size;
 
-        StMemcpy(tmp, that, no_cap * elt_size);
-        FreeTinyD(that), that = tmp;
+        StMemcpy(tmp, self, no_cap * elt_size);
+        FreeTinyD(self), self = tmp;
     }
 
-    StMemcpy(that + length * elt_size, ref, elt_size);
-    TinyDGetHead(that)->length += 1;
+    StMemcpy(self + length * elt_size, ref, elt_size);
+    TinyDGetHead(self)->length += 1;
 
-    return that;
+    return self;
 }
 
 #undef TinyDGetHead
