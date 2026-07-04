@@ -120,17 +120,7 @@ size_t TinyDLength(const void* that), TinyDCapacity(const void* that),
 
 /// Appends an element to the dynamic-array, growing it if necessary. DO NOT FORGET to assign the
 /// result of this to the array you passed in.
-void* TinyDAppendPro(void* that, const void* ref);
-
-/// A shorthand for `TinyDPush` that accepts any value, not just pointers. DO NOT FORGET to assign
-/// the result of this to the array you passed in.
-///
-/// (Ab)uses the GCC compound statement extension; may not work with non-mainstream compilers.
-#define TinyDAppend(that, value)                                                                   \
-    ({                                                                                             \
-        __typeof__(value) tmp = (value);                                                           \
-        TinyDAppendPro((that), &tmp);                                                              \
-    })
+void* TinyDPush(void* this, const void* ref);
 
 /// Shrinks a tiny-D's internal length counter to the specified value.
 void* TinyDShrink(void* that, size_t newlen);
@@ -348,7 +338,7 @@ TinyBucket* TinyMapPut(TinyMap* that, TinyHash hash, const void* data, int size)
     StCheckedAlloc(bucket.data, bucket.data_size);
     StMemcpy(bucket.data, data, bucket.data_size);
 
-    that->buckets[idx] = (TinyBucket*)TinyDAppendPro(that->buckets[idx], &bucket);
+    that->buckets[idx] = (TinyBucket*)TinyDPush(that->buckets[idx], &bucket);
     that->length++;
 
     return &that->buckets[idx][len];
@@ -473,7 +463,7 @@ void* TinyDErase(void* _this, size_t idx) {
     return TinyDPop(that);
 }
 
-void* TinyDAppendPro(void* _this, const void* ref) {
+void* TinyDPush(void* _this, const void* ref) {
     char* that = (char*)_this;
 
     if (!TinyDGetHead(that))

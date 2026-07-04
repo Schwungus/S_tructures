@@ -169,7 +169,7 @@ static void d_append_doesnt_crash() {
     const size_t count = ST_TINY_D_INITIAL_CAPACITY * (ST_TINY_D_GROWTH_FACTOR * 8);
 
     for (int i = 0; i < count; i++)
-        da = TinyDAppend(da, i);
+        da = TinyDPush(da, &i);
 
     assert_eq(TinyDLength(da), count);
     assert_eq(da[3], 3);
@@ -180,18 +180,19 @@ static void d_append_doesnt_crash() {
 
 static void d_pops_back() {
     int* da = MakeTinyD(int);
+    static const int a = 123, b = 777;
 
-    da = TinyDAppend(da, 123);
+    da = TinyDPush(da, &a);
     assert_eq(TinyDLength(da), 1);
-    assert_eq(da[0], 123);
+    assert_eq(da[0], a);
 
-    da = TinyDAppend(da, 777);
+    da = TinyDPush(da, &b);
     assert_eq(TinyDLength(da), 2);
-    assert_eq(da[1], 777);
+    assert_eq(da[1], b);
 
     da = TinyDPop(da);
     assert_eq(TinyDLength(da), 1);
-    assert_eq(da[0], 123);
+    assert_eq(da[0], a);
 
     da = TinyDPop(da);
     assert_eq(TinyDLength(da), 0);
@@ -201,18 +202,19 @@ static void d_pops_back() {
 
 static void d_pops_front() {
     int* da = MakeTinyD(int);
+    static const int a = 123, b = 777;
 
-    da = TinyDAppend(da, 123);
+    da = TinyDPush(da, &a);
     assert_eq(TinyDLength(da), 1);
-    assert_eq(da[0], 123);
+    assert_eq(da[0], a);
 
-    da = TinyDAppend(da, 777);
+    da = TinyDPush(da, &b);
     assert_eq(TinyDLength(da), 2);
-    assert_eq(da[1], 777);
+    assert_eq(da[1], b);
 
     da = TinyDPopFront(da);
     assert_eq(TinyDLength(da), 1);
-    assert_eq(da[0], 777);
+    assert_eq(da[0], b);
 
     da = TinyDPopFront(da);
     assert_eq(TinyDLength(da), 0);
@@ -224,7 +226,7 @@ static void d_erases() {
     int* da = MakeTinyD(int);
 
     for (int i = 0; i < 10; i++)
-        da = TinyDAppend(da, i);
+        da = TinyDPush(da, &i);
 
     assert_eq(TinyDLength(da), 10);
     assert_eq(da[5], 5);
