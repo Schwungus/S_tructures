@@ -166,7 +166,7 @@ static void test_hashmaps() {
 
 static void d_append_doesnt_crash() {
     int* da = MakeTinyD(int);
-    const size_t count = ST_TINY_D_INITIAL_CAPACITY * (ST_TINY_D_GROWTH_FACTOR * 8);
+    const size_t count = TINY_D_INITIAL_CAPACITY * (TINY_D_GROWTH_FACTOR * 8);
 
     for (int i = 0; i < count; i++)
         da = TinyDPush(da, &i);
@@ -247,8 +247,49 @@ static void test_tinyDs() {
     run_test(d_erases);
 }
 
+static void tiny_pq_signed_works_fine() {
+    assert_eq(TINY_P_FROM_SIGNED(-1), UINT64_MAX);
+}
+
+typedef struct {
+    TinyPriority prio, value;
+} DumbPair;
+
+static void tiny_pq_ordering_is_stable() {
+    TinyPq pq = {0};
+    DumbPair specimen = {0};
+
+    for (specimen.value = 0; specimen.value < 10; specimen.value++)
+        for (specimen.prio = specimen.value; specimen.prio < 10; specimen.prio++)
+            TinyPqInsert(&pq, specimen.prio, &specimen, sizeof(specimen));
+
+    const size_t should_count = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10; // fre4ky hand unroll.......
+    size_t count = 0;
+
+    TinyPriority should_prio = 9, should_value = 0;
+
+    TINY_PQ_FOREACH (&pq, it) {
+        DumbPair cur = *(DumbPair*)it.data;
+        count += 1;
+
+        assert_eq(cur.value, should_value);
+        assert_eq(cur.prio, should_prio);
+
+        if (should_value++ == should_prio)
+            should_prio -= 1, should_value = 0;
+    }
+
+    assert_eq(count, should_count);
+    FreeTinyPq(&pq);
+}
+
+static void test_tiny_pqs() {
+    run_test(tiny_pq_signed_works_fine);
+    run_test(tiny_pq_ordering_is_stable);
+}
+
 int main(int argc, char* argv[]) {
-    test_hashmaps(), test_tinyDs();
+    test_hashmaps(), test_tinyDs(), test_tiny_pqs();
     printf("All good!\n"), fflush(stdout);
     return EXIT_SUCCESS;
 }

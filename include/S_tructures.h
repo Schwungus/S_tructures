@@ -13,11 +13,12 @@
 #define ST_NORETURN __attribute__((noreturn))
 #endif
 
-#define ST_TINY_MAP_CAPACITY (256)
+#define TINY_MAP_CAPACITY (256)
 
 /// A unique identifier for a tiny-map entry.
 ///
 /// Use `StHashStr()` or `TinyDict*()` functions for indexing using string keys of arbitrary length.
+///
 /// Otherwise, if 8 bytes is enough, you can use `StStrKey`.
 typedef uint64_t TinyHash;
 
@@ -42,15 +43,39 @@ typedef struct {
     void* data;
 } TinyMapIterator;
 
-#define ST_TINY_D_INITIAL_CAPACITY ((size_t)64)
-#define ST_TINY_D_GROWTH_FACTOR ((size_t)2)
+#define TINY_D_INITIAL_CAPACITY ((size_t)64)
+#define TINY_D_GROWTH_FACTOR ((size_t)2)
 
 /// The header of a tiny dynamic array. You never interact with it directly.
 typedef struct {
     size_t length, capacity, elt_size;
 } TinyDHead;
 
+/// A `TinyPq` priority. It's unsigned!!! Use the helper below this declaration to normalize for
+/// signed values.
+typedef uint64_t TinyPriority;
+
+/// A helper macro that converts signed 64-bit integers to an unsigned 64-bit `TinyPriority` without
+/// losing precision.
+#define TINY_P_FROM_SIGNED(x) ((TinyPriority)(x))
+
+/// A tiny priority-queue.
+typedef struct TinyPq {
+    void* elts;
+    size_t elt_size;
+    TinyPriority prio;
+    struct TinyPq* low;
+} TinyPq;
+
+/// An iterator over `TinyPq`.
+typedef struct {
+    TinyPq *source, *cur_node;
+    size_t cur_idx;
+    void* data;
+} TinyPqIterator;
+
 #define TINY_MAP_FOREACH(map, it) for (TinyMapIterator it = TinyMapIter((map)); TinyMapNext(&(it));)
+#define TINY_PQ_FOREACH(pq, it) for (TinyPqIterator it = TinyPqIter((pq)); TinyPqNext(&(it));)
 
 /// Copy up to 8 bytes from a string and return them as an `StTinyKey`.
 TinyHash StStrKey(const char* s);
@@ -109,7 +134,7 @@ void* MakeTinyDPro(size_t capacity, size_t elt_size);
 
 /// A shorthand for `MakeTinyDPro` that creates a dynamic-array with a default capacity and the
 /// element-size equal to the size requirement of the passed type.
-#define MakeTinyD(T) ((T*)MakeTinyDPro(ST_TINY_D_INITIAL_CAPACITY, sizeof(T)))
+#define MakeTinyD(T) ((T*)MakeTinyDPro(TINY_D_INITIAL_CAPACITY, sizeof(T)))
 
 /// Properly cleans up a tiny dynamic-array and its header.
 void FreeTinyD(void* self);
@@ -136,6 +161,21 @@ void* TinyDPopFront(void* self);
 
 /// Pops the element at index `idx` and shifts the rest accordingly.
 void* TinyDErase(void* self, size_t idx);
+
+/// Inserts a value into a tiny priority-queue.
+void TinyPqInsert(TinyPq* self, TinyPriority prio, const void* value, size_t size);
+
+/// Creates an iterator over a `TinyPq`. Iterates from highest to lowest, as it is expected.
+///
+/// Pointer-cast and dereference `.data` to get the current element's value.
+TinyPqIterator TinyPqIter(TinyPq* self);
+
+/// Returns true and advances the iterator if there is an entry available inside the iterable.
+/// Otherwise returns false.
+bool TinyPqNext(TinyPqIterator* self);
+
+/// Properly cleans up a tiny priority-queue. You can reuse it after!
+void FreeTinyPq(TinyPq* self);
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
 
@@ -230,7 +270,7 @@ ST_MAKE_MAP_GET(U64, uint64_t);
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
 
-#define TinyKey2Idx(key) ((size_t)((ST_TINY_MAP_CAPACITY - 1) & StShuffleKey(key)))
+#define TinyKey2Idx(key) ((size_t)((TINY_MAP_CAPACITY - 1) & StShuffleKey(key)))
 #define TinyDGetHead(ptr) ((ptr) ? ((TinyDHead*)((char*)(ptr) - sizeof(TinyDHead))) : NULL)
 
 static const TinyHash StShuffleKey(const TinyHash hash) {
@@ -277,7 +317,7 @@ void FreeTinyMap(TinyMap* self) {
         return;
 
     if (self->buckets) {
-        for (int i = 0; i < ST_TINY_MAP_CAPACITY; i++) {
+        for (int i = 0; i < TINY_MAP_CAPACITY; i++) {
             for (int j = 0; j < TinyDLength(self->buckets[i]); j++)
                 FreeTinyBucket(&self->buckets[i][j]);
             FreeTinyD(self->buckets[i]);
@@ -300,8 +340,8 @@ TinyBucket* TinyMapPut(TinyMap* self, TinyHash hash, const void* data, int size)
     }
 
     if (!self->buckets) {
-        StCheckedAlloc(self->buckets, sizeof(TinyBucket*) * ST_TINY_MAP_CAPACITY);
-        StMemset((void*)self->buckets, 0, sizeof(TinyBucket*) * ST_TINY_MAP_CAPACITY);
+        StCheckedAlloc(self->buckets, sizeof(TinyBucket*) * TINY_MAP_CAPACITY);
+        StMemset((void*)self->buckets, 0, sizeof(TinyBucket*) * TINY_MAP_CAPACITY);
     }
 
     const size_t idx = TinyKey2Idx(hash);
@@ -386,11 +426,11 @@ bool TinyMapNext(TinyMapIterator* iter) {
     if (!iter->source || !iter->source->buckets)
         return false;
 
-    while (iter->hash_idx < ST_TINY_MAP_CAPACITY
+    while (iter->hash_idx < TINY_MAP_CAPACITY
            && iter->bucket_idx >= TinyDLength(iter->source->buckets[iter->hash_idx]))
         iter->hash_idx++, iter->bucket_idx = 0;
 
-    if (iter->hash_idx >= ST_TINY_MAP_CAPACITY)
+    if (iter->hash_idx >= TINY_MAP_CAPACITY)
         return false;
 
     iter->bucket = &iter->source->buckets[iter->hash_idx][iter->bucket_idx++];
@@ -474,8 +514,7 @@ void* TinyDPush(void* _self, const void* ref) {
     const size_t no_cap = TinyDGetHead(self)->capacity;
 
     if (length == no_cap) {
-        const size_t newcap
-            = no_cap ? no_cap * ST_TINY_D_GROWTH_FACTOR : ST_TINY_D_INITIAL_CAPACITY;
+        const size_t newcap = no_cap ? no_cap * TINY_D_GROWTH_FACTOR : TINY_D_INITIAL_CAPACITY;
 
         char* tmp = NULL;
         StCheckedAlloc(tmp, elt_size * newcap + sizeof(TinyDHead));
@@ -497,6 +536,93 @@ void* TinyDPush(void* _self, const void* ref) {
 
 #undef TinyDGetHead
 #undef TinyKey2Idx
+
+void TinyPqInsert(TinyPq* self, TinyPriority prio, const void* value, size_t size) {
+    if (!self)
+        return;
+
+    if (!self->elts) {
+        self->prio = prio, self->elt_size = size;
+        self->elts = MakeTinyDPro(TINY_D_INITIAL_CAPACITY, size);
+        self->elts = TinyDPush(self->elts, value);
+        return;
+    }
+
+    if (self->elt_size != size) {
+        StLog("TinyPq element size mismatch!!! Skipped insert");
+        return;
+    }
+
+    if (self->prio == prio) {
+        self->elts = TinyDPush(self->elts, value);
+    } else if (prio > self->prio) {
+        TinyPq* newlow = NULL;
+        StCheckedAlloc(newlow, sizeof(TinyPq));
+        StMemset(newlow, 0, sizeof(TinyPq));
+
+        newlow->elts = self->elts, newlow->prio = self->prio;
+        newlow->elt_size = self->elt_size, newlow->low = self->low;
+
+        self->prio = prio, self->low = newlow;
+        self->elts = MakeTinyDPro(TINY_D_INITIAL_CAPACITY, size);
+        self->elts = TinyDPush(self->elts, value);
+    } else {
+        if (!self->low) {
+            StCheckedAlloc(self->low, sizeof(TinyPq));
+            StMemset(self->low, 0, sizeof(TinyPq));
+        }
+
+        TinyPqInsert(self->low, prio, value, size);
+    }
+}
+
+TinyPqIterator TinyPqIter(TinyPq* self) {
+    return (TinyPqIterator){.source = self};
+}
+
+bool TinyPqNext(TinyPqIterator* self) {
+    if (self->cur_node) {
+        self->cur_idx += 1;
+
+        if (self->cur_idx < TinyDLength(self->cur_node->elts)) {
+            self->data = (char*)self->data + self->cur_node->elt_size;
+            return true;
+        }
+
+        self->cur_node = self->cur_node->low;
+    } else if (self->source) {
+        self->cur_node = self->source;
+    } else {
+        return false;
+    }
+
+    if (self->cur_node) {
+        self->data = self->cur_node->elts;
+        self->cur_idx = 0;
+        return true;
+    } else {
+        self->source = NULL;
+        return false;
+    }
+}
+
+void FreeTinyPq(TinyPq* self) {
+    if (!self)
+        return;
+
+    if (self->elts) {
+        FreeTinyD(self->elts);
+        self->elts = NULL;
+    }
+
+    if (self->low) {
+        FreeTinyPq(self->low);
+        StFree(self->low); // yeah it's a linked list so what bitch.......
+        self->low = NULL;
+    }
+
+    self->elt_size = 0, self->prio = 0;
+}
 
 #endif // S_TRUCTURES_IMPLEMENTATION
 
