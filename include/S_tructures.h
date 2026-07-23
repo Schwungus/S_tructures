@@ -51,13 +51,8 @@ typedef struct {
     size_t length, capacity, elt_size;
 } TinyDHead;
 
-/// A `TinyPq` priority. It's unsigned!!! Use the helper below this declaration to normalize for
-/// signed values.
-typedef uint64_t TinyPriority;
-
-/// A helper macro that converts signed 64-bit integers to an unsigned 64-bit `TinyPriority` without
-/// losing precision.
-#define TINY_P_FROM_SIGNED(x) ((TinyPriority)(x))
+/// A `TinyPq` priority. It's signed!!!
+typedef int64_t TinyPriority;
 
 /// A tiny priority-queue.
 typedef struct TinyPq {
