@@ -257,7 +257,7 @@ typedef struct {
 
 static void tiny_pq_ordering_is_stable() {
     TinyPq pq = {0};
-    DumbPair specimen = {0};
+    DumbPair specimen = {0}, should = {9, 0};
 
     for (specimen.value = 0; specimen.value < 10; specimen.value++)
         for (specimen.prio = specimen.value; specimen.prio < 10; specimen.prio++)
@@ -266,17 +266,16 @@ static void tiny_pq_ordering_is_stable() {
     const size_t should_count = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10; // fre4ky hand unroll.......
     size_t count = 0;
 
-    TinyPriority should_prio = 9, should_value = 0;
-
     TINY_PQ_FOREACH (&pq, it) {
-        DumbPair cur = *(DumbPair*)it.data;
+        specimen = *(DumbPair*)it.data;
+
+        assert_eq(specimen.value, should.value);
+        assert_eq(specimen.prio, should.prio);
+
+        if (should.value++ == should.prio)
+            should.prio -= 1, should.value = 0;
+
         count += 1;
-
-        assert_eq(cur.value, should_value);
-        assert_eq(cur.prio, should_prio);
-
-        if (should_value++ == should_prio)
-            should_prio -= 1, should_value = 0;
     }
 
     assert_eq(count, should_count);
