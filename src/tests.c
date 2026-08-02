@@ -251,7 +251,7 @@ typedef struct {
     TinyPriority prio, value;
 } DumbPair;
 
-static void tiny_pq_ordering_is_stable() {
+static void pq_ordering_is_stable() {
     TinyPq pq = {0};
     DumbPair specimen = {0}, should = {9, 0};
 
@@ -279,7 +279,7 @@ static void tiny_pq_ordering_is_stable() {
 }
 
 static void test_tiny_pqs() {
-    run_test(tiny_pq_ordering_is_stable);
+    run_test(pq_ordering_is_stable);
 }
 
 int main(int argc, char* argv[]) {
