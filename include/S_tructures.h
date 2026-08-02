@@ -131,6 +131,9 @@ void* MakeTinyDPro(size_t capacity, size_t elt_size);
 /// element-size equal to the size requirement of the passed type.
 #define MakeTinyD(T) ((T*)MakeTinyDPro(TINY_D_INITIAL_CAPACITY, sizeof(T)))
 
+/// Increases a tiny-D's capacity by `TINY_D_GROWTH_FACTOR`.
+void* TinyDGrow(void* self);
+
 /// Properly cleans up a tiny dynamic-array and its header.
 void FreeTinyD(void* self);
 
@@ -466,6 +469,28 @@ void FreeTinyD(void* self) {
         StFree(TinyDGetHead(self));
 }
 
+void* TinyDGrow(void* _self) {
+    char* self = _self;
+
+    const size_t length = TinyDGetHead(self)->length;
+    const size_t elt_size = TinyDGetHead(self)->elt_size;
+    const size_t no_cap = TinyDGetHead(self)->capacity;
+    const size_t newcap = no_cap ? no_cap * TINY_D_GROWTH_FACTOR : TINY_D_INITIAL_CAPACITY;
+
+    char* tmp = NULL;
+    StCheckedAlloc(tmp, elt_size * newcap + sizeof(TinyDHead));
+    tmp += sizeof(TinyDHead);
+
+    TinyDGetHead(tmp)->capacity = newcap;
+    TinyDGetHead(tmp)->length = length;
+    TinyDGetHead(tmp)->elt_size = elt_size;
+
+    StMemcpy(tmp, self, no_cap * elt_size);
+    FreeTinyD(self), self = tmp;
+
+    return self;
+}
+
 void* TinyDShrink(void* self, size_t newlen) {
     if (self && newlen < TinyDLength(self))
         TinyDGetHead(self)->length = newlen;
@@ -506,22 +531,9 @@ void* TinyDPush(void* _self, const void* ref) {
 
     const size_t length = TinyDGetHead(self)->length;
     const size_t elt_size = TinyDGetHead(self)->elt_size;
-    const size_t no_cap = TinyDGetHead(self)->capacity;
 
-    if (length == no_cap) {
-        const size_t newcap = no_cap ? no_cap * TINY_D_GROWTH_FACTOR : TINY_D_INITIAL_CAPACITY;
-
-        char* tmp = NULL;
-        StCheckedAlloc(tmp, elt_size * newcap + sizeof(TinyDHead));
-        tmp += sizeof(TinyDHead);
-
-        TinyDGetHead(tmp)->capacity = newcap;
-        TinyDGetHead(tmp)->length = length;
-        TinyDGetHead(tmp)->elt_size = elt_size;
-
-        StMemcpy(tmp, self, no_cap * elt_size);
-        FreeTinyD(self), self = tmp;
-    }
+    if (length == TinyDGetHead(self)->capacity)
+        self = TinyDGrow(self);
 
     StMemcpy(self + length * elt_size, ref, elt_size);
     TinyDGetHead(self)->length += 1;
