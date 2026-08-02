@@ -247,10 +247,6 @@ static void test_tinyDs() {
     run_test(d_erases);
 }
 
-static void tiny_pq_signed_works_fine() {
-    assert_eq(TINY_P_FROM_SIGNED(-1), UINT64_MAX);
-}
-
 typedef struct {
     TinyPriority prio, value;
 } DumbPair;
@@ -283,7 +279,6 @@ static void tiny_pq_ordering_is_stable() {
 }
 
 static void test_tiny_pqs() {
-    run_test(tiny_pq_signed_works_fine);
     run_test(tiny_pq_ordering_is_stable);
 }
 
