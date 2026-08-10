@@ -251,6 +251,35 @@ typedef struct {
     TinyPriority prio, value;
 } DumbPair;
 
+static void pq_emptying_works() {
+    TinyPq pq = {0};
+    bool iterated = false;
+
+    TINY_PQ_FOREACH (&pq, it) {
+        iterated = true;
+    }
+
+    assert_eq(iterated, false);
+
+    TinyPqInsert(&pq, 0, &(int){0}, sizeof(int));
+
+    TINY_PQ_FOREACH (&pq, it) {
+        iterated = true;
+    }
+
+    FreeTinyPq(&pq);
+    assert_eq(iterated, true);
+
+    iterated = false;
+
+    TINY_PQ_FOREACH (&pq, it) {
+        iterated = true;
+    }
+
+    FreeTinyPq(&pq);
+    assert_eq(iterated, false);
+}
+
 static void pq_ordering_is_stable() {
     TinyPq pq = {0};
     DumbPair specimen = {0}, should = {9, 0};
@@ -279,6 +308,7 @@ static void pq_ordering_is_stable() {
 }
 
 static void test_tiny_pqs() {
+    run_test(pq_emptying_works);
     run_test(pq_ordering_is_stable);
 }
 

@@ -588,24 +588,18 @@ TinyPqIterator TinyPqIter(TinyPq* self) {
 }
 
 bool TinyPqNext(TinyPqIterator* self) {
-    if (self->cur_node) {
+    if (self->cur_node)
         self->cur_idx += 1;
-
-        if (self->cur_idx < TinyDLength(self->cur_node->elts)) {
-            self->data = (char*)self->data + self->cur_node->elt_size;
-            return true;
-        }
-
-        self->cur_node = self->cur_node->low;
-    } else if (self->source) {
+    else if (self->source)
         self->cur_node = self->source;
-    } else {
+    else
         return false;
-    }
+
+    while (self->cur_node && self->cur_idx >= TinyDLength(self->cur_node->elts))
+        self->cur_node = self->cur_node->low, self->cur_idx = 0;
 
     if (self->cur_node) {
-        self->data = self->cur_node->elts;
-        self->cur_idx = 0;
+        self->data = (char*)self->cur_node->elts + self->cur_idx * self->cur_node->elt_size;
         return true;
     } else {
         self->source = NULL;
