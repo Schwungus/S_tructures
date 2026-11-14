@@ -143,6 +143,13 @@ size_t TinyDLength(const void* self), TinyDCapacity(const void* self),
 
 /// Appends an element to the dynamic-array, growing it if necessary. DO NOT FORGET to assign the
 /// result of this to the array you passed in.
+///
+/// To push a constant without assigning to an intermediate variable, try:
+///
+/// ```c
+/// int* v = MakeTinyD(int);
+/// v = TinyDPush(v, &(int){69});
+/// ```
 void* TinyDPush(void* self, const void* ref);
 
 /// Shrinks a tiny-D's internal length counter to the specified value.

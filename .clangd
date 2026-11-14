@@ -1,3 +1,6 @@
+Documentation:
+  CommentFormat: Doxygen
+---
 If:
   PathMatch: include/S_tructures\.h
 CompileFlags:
