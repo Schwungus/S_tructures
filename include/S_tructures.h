@@ -35,12 +35,22 @@ typedef struct {
     size_t length;
 } TinyMap;
 
-/// An iterator over tiny-maps.
+/// Please do not touch these :)
 typedef struct {
     TinyMap* source;
     size_t hash_idx, bucket_idx;
+} TinyMapIteratorGuts;
+
+/// An iterator over tiny-maps.
+typedef struct {
+    /// Do not touch this please :)
+    TinyMapIteratorGuts INTERNALS;
+    /// A pointer to the current bucket.
     TinyBucket* bucket;
+    /// A quick-access pointer to the bucket's data.
     void* data;
+    /// A copy of the key's hash.
+    TinyHash key;
 } TinyMapIterator;
 
 #define TINY_D_INITIAL_CAPACITY ((size_t)64)
@@ -114,10 +124,12 @@ void TinyMapErase(TinyMap* self, TinyHash hash);
 /// An shorthand for `TinyMapErase` which accepts string keys and hashes them for you.
 #define TinyDictErase(self, hash) TinyMapErase((self), StHashStr((hash)))
 
-/// Creates an iterator over the values of a tiny-map.
+/// Creates an iterator over the tiny-map buckets.
 ///
-/// Pointer-cast and dereference `.data` to get the value of the current entry. Cast `.bucket` to
-/// `TinyBucket` to set/unset a cleanup function.
+/// Pointer-cast `.data` to get a reference to the value of the current bucket. `.hash` is a copy of
+/// its key's hash, for quick access.
+///
+/// Poke at `.bucket` to set/unset a cleanup function.
 TinyMapIterator TinyMapIter(TinyMap* self);
 
 /// Returns true and advances the iterator if there is an entry available inside the iterable.
@@ -428,24 +440,28 @@ void TinyMapErase(TinyMap* self, TinyHash hash) {
 }
 
 bool TinyMapNext(TinyMapIterator* iter) {
-    if (!iter->source || !iter->source->buckets)
+    if (!iter->INTERNALS.source || !iter->INTERNALS.source->buckets)
         return false;
 
-    while (iter->hash_idx < TINY_MAP_CAPACITY
-           && iter->bucket_idx >= TinyDLength(iter->source->buckets[iter->hash_idx]))
-        iter->hash_idx++, iter->bucket_idx = 0;
+    TinyMapIteratorGuts* guts = &iter->INTERNALS;
 
-    if (iter->hash_idx >= TINY_MAP_CAPACITY)
+    while (guts->hash_idx < TINY_MAP_CAPACITY
+           && guts->bucket_idx >= TinyDLength(guts->source->buckets[guts->hash_idx]))
+        guts->hash_idx++, guts->bucket_idx = 0;
+
+    if (guts->hash_idx >= TINY_MAP_CAPACITY)
         return false;
 
-    iter->bucket = &iter->source->buckets[iter->hash_idx][iter->bucket_idx++];
+    iter->bucket = &guts->source->buckets[guts->hash_idx][guts->bucket_idx++];
     iter->data = iter->bucket ? iter->bucket->data : NULL;
+    iter->key = iter->bucket ? iter->bucket->hash : 0;
 
     return true;
 }
 
 TinyMapIterator TinyMapIter(TinyMap* self) {
-    return (TinyMapIterator){.source = self};
+    TinyMapIteratorGuts guts = {.source = self};
+    return (TinyMapIterator){guts};
 }
 
 size_t TinyDLength(const void* self) {
