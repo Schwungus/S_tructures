@@ -75,8 +75,9 @@ Tiny D's work very similarly to Golang slices and provide an equivalent of the `
 ```c
 int* da = MakeTinyD(int);
 
-da = TinyDAppend(da, 42);
-da = TinyDAppend(da, 67);
+da = TinyDPush(da, &(int){42});
+da = TinyDPush(da, &(int){67});
+
 printf("the sum of %d plus %d is: %d", da[0], da[1], da[0] + da[1]);
 
 FreeTinyD(da);
