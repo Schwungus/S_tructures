@@ -21,10 +21,10 @@ Then add a `S_tructures.c` file with the library's implementation details:
 
 ```c
 #define S_TRUCTURES_IMPLEMENTATION
-#include "S_tructures.h" // IWYU pragma: keep
+#include <S_tructures.h>
 ```
 
-And you're ready to go! Just `#include "S_tructures.h"` in your code, and have fun using these crutches.
+And you're ready to go! Just `#include <S_tructures.h>` in your code, and have fun using these crutches.
 
 ## Tiny-Maps
 
@@ -34,8 +34,8 @@ Tiny-maps are tiny hashmaps. Here's an appetizer to get you started:
 // zero-initialization on the stack is more than enough.
 TinyMap map = {0};
 
-TinyMapPut(&map, StHashStr("greeting"), "hello", strlen("hello") + 1);
-TinyMapPut(&map, StHashStr("name"), "Bob", strlen("Bob") + 1);
+TinyMapPut(&map, S_HashStr("greeting"), "hello", strlen("hello") + 1);
+TinyMapPut(&map, S_HashStr("name"), "Bob", strlen("Bob") + 1);
 
 TINY_MAP_FOREACH (&map, it)
     printf("%s\n", (char*)it.data);
@@ -50,18 +50,18 @@ FreeTinyMap(&map);
 
 The tiny-maps possess the following properties:
 
-1. Tiny-maps don't store the whole key you put in them, only an 8 byte hash at most. This is also why you need to use `StHashStr` to get a tiny-map-compatible key from a string key.
+1. Tiny-maps don't store the whole key you put in them, only an 8 byte hash at most. This is also why you need to use `S_HashStr` to get a tiny-map-compatible key from a string key.
 2. Tiny-maps don't handle hash collisions, at all, due to the point above. If this issue breaks your program, you should probably buy a lottery ticket!
-3. Values inside tiny-map buckets are dynamically typed. As long as you're handling your data in a sane way, you should be able to pointer-cast `StTinyBucket.data` to anything, without your program hardcrashing. E.g. when `it` is the bucket:
+3. Values inside tiny-map buckets are dynamically typed. As long as you're handling your data in a sane way, you should be able to pointer-cast `TinyBucket.data` to anything, without your program hardcrashing. E.g.:
 
    ```c
    typedef struct { int x, y; } Enemy;
 
-   void DrawEnemy(Enemy this) { /* ... */ }
+   void DrawEnemy(Enemy self) { /* ... */ }
 
    TinyMap enemies = ...;
    TINY_MAP_FOREACH (enemies, it)
-       DrawEnemy(*(Enemy*)it.data);
+       DrawEnemy(*(Enemy*)it.data); // pointer-cast here
    ```
 
 4. Iterating over key-value pairs isn't guaranteed to result in the pairs coming in the same order they were inserted.
@@ -91,28 +91,28 @@ As a sidenote, [tsoding](https://github.com/tsoding)'s latest videos inspired me
 
 ### Custom Allocator
 
-In your `S_tructures.c`, you can customize the memory allocator by defining `StAlloc`, `StFree`, `StMemset`, and `StMemcpy`. For example, to use memory utilities provided by SDL3, you can define:
+In your `S_tructures.c`, you can customize the memory allocator by defining `S_Alloc`, `S_Free`, `S_Memset`, and `S_Memcpy`. For example, to use memory utilities provided by SDL3, you can define:
 
 ```c
 #include <SDL3/SDL_stdinc.h>
-#define StAlloc SDL_malloc
-#define StFree SDL_free
-#define StMemset SDL_memset
-#define StMemcpy SDL_memcpy
+#define S_Alloc SDL_malloc
+#define S_Free SDL_free
+#define S_Memset SDL_memset
+#define S_Memcpy SDL_memcpy
 
 #define S_TRUCTURES_IMPLEMENTATION
-#include "S_tructures.h" // IWYU pragma: keep
+#include <S_tructures.h>
 ```
 
-Make sure to define `StAlloc` & `StFree` and `StMemset` & `StMemcpy` in pairs. Doing otherwise will not compile as it's a logic error; i.e. your custom `malloc` implementation should almost always come with its own custom `free` if you get the gist.
+Make sure to define `S_Alloc` & `S_Free` and `S_Memset` & `S_Memcpy` in pairs. Doing otherwise will not compile as it's a logic error; i.e. your custom `malloc` implementation should almost always come with its own custom `free` if you get the gist.
 
 ### Custom Logger
 
-`StLog` is called when spitting useful error messages, and can be customized as well. Here's how it's defined by default:
+`S_Log` is called when spitting useful error messages, and can be customized as well. Here's how it's defined by default:
 
 ```c
 #include <stdio.h>
-#define StLog(...) \
+#define S_Log(...) \
     do { \
         fprintf(stdout, "[S_tr]: %c" __VA_ARGS__, '\n'); \
         fflush(stdout); \

@@ -13,23 +13,33 @@
 #define ST_NORETURN __attribute__((noreturn))
 #endif
 
+/// A piece of heap-allocated data with a size and a cleanup function.
+typedef struct {
+    void *ptr, (*cleanup)(void*);
+    size_t size;
+} S_Box;
+
 #define TINY_MAP_CAPACITY (256)
 
 /// A unique identifier for a tiny-map entry.
 ///
-/// Use `StHashStr()` or `TinyDict*()` functions for indexing using string keys of arbitrary length.
+/// Use `TinyDict*()` functions for indexing using null-terminated strings, or convert such strings
+/// into hashes manually with `S_HashStr()`.
 ///
-/// Otherwise, if 8 bytes is enough, you can use `StStrKey`.
+/// Otherwise, if 8 bytes are enough for the key, you can use `S_StrKey` to bitcast it.
 typedef uint64_t TinyHash;
 
-/// An internal storage cell for `TinyMap`s.
+/// A storage cell for `TinyMap` entries.
 typedef struct TinyBucket {
+    S_Box data;
     TinyHash hash;
-    void *data, (*cleanup)(void*);
-    size_t data_size;
 } TinyBucket;
 
-/// A tiny hashmap-like structure indexed with 8-byte keys.
+/// A tiny dictionary-like structure that doesn't store the keys, only their hashes. Values are
+/// dynamically sized.
+///
+/// If you really need to retain the keys you put inside of a `TinyMap`, just store the whole
+/// key-value pairs inside it.
 typedef struct {
     TinyBucket** buckets;
     size_t length;
@@ -41,7 +51,7 @@ typedef struct {
     size_t hash_idx, bucket_idx;
 } TinyMapIteratorGuts;
 
-/// An iterator over tiny-maps.
+/// An iterator over `TinyMap`s.
 typedef struct {
     /// Do not touch this please :)
     TinyMapIteratorGuts INTERNALS;
@@ -82,11 +92,11 @@ typedef struct {
 #define TINY_MAP_FOREACH(map, it) for (TinyMapIterator it = TinyMapIter((map)); TinyMapNext(&(it));)
 #define TINY_PQ_FOREACH(pq, it) for (TinyPqIterator it = TinyPqIter((pq)); TinyPqNext(&(it));)
 
-/// Copy up to 8 bytes from a string and return them as an `StTinyKey`.
-TinyHash StStrKey(const char* s);
+/// Copy up to 8 bytes from a string and return them as an `S_TinyKey`.
+TinyHash S_StrKey(const char* s);
 
-/// Hash a string of arbitrary length into an `StTinyKey`.
-TinyHash StHashStr(const char* s);
+/// Hash a string of arbitrary length into an `S_TinyKey`.
+TinyHash S_HashStr(const char* s);
 
 /// Cleanup a `TinyMap`.
 void FreeTinyMap(TinyMap* self);
@@ -102,13 +112,13 @@ size_t TinyMapLength(const TinyMap* self);
 TinyBucket* TinyMapPut(TinyMap* self, TinyHash hash, const void* data, int size);
 
 /// An shorthand for `TinyMapPut` which accepts string keys and hashes them for you.
-#define TinyDictPut(self, hash, data, size) TinyMapPut((self), StHashStr((hash)), (data), (size))
+#define TinyDictPut(self, hash, data, size) TinyMapPut((self), S_HashStr((hash)), (data), (size))
 
 /// Find the bucket by input key, or return `NULL` if there is none.
 TinyBucket* TinyMapFind(const TinyMap* self, TinyHash hash);
 
 /// An shorthand for `TinyMapFind` which accepts string keys and hashes them for you.
-#define TinyDictFind(self, hash) TinyMapFind((self), StHashStr((hash)))
+#define TinyDictFind(self, hash) TinyMapFind((self), S_HashStr((hash)))
 
 /// Returns a pointer to an entry's data, if any. Spits out a `NULL` otherwise.
 ///
@@ -116,13 +126,13 @@ TinyBucket* TinyMapFind(const TinyMap* self, TinyHash hash);
 char* TinyMapGet(const TinyMap* self, TinyHash hash);
 
 /// An shorthand for `TinyMapGet` which accepts string keys and hashes them for you.
-#define TinyDictGet(self, hash) TinyMapGet((self), StHashStr((hash)))
+#define TinyDictGet(self, hash) TinyMapGet((self), S_HashStr((hash)))
 
 /// Free the bucket and the data associated with a key.
 void TinyMapErase(TinyMap* self, TinyHash hash);
 
 /// An shorthand for `TinyMapErase` which accepts string keys and hashes them for you.
-#define TinyDictErase(self, hash) TinyMapErase((self), StHashStr((hash)))
+#define TinyDictErase(self, hash) TinyMapErase((self), S_HashStr((hash)))
 
 /// Creates an iterator over the tiny-map buckets.
 ///
@@ -196,44 +206,44 @@ void FreeTinyPq(TinyPq* self);
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
 
-#if !defined(StAlloc) && !defined(StFree)
+#if !defined(S_Alloc) && !defined(S_Free)
 
 #include <stdlib.h>
-#define StAlloc malloc
-#define StFree free
+#define S_Alloc malloc
+#define S_Free free
 
-#elif !defined(StAlloc) || !defined(StFree)
+#elif !defined(S_Alloc) || !defined(S_Free)
 
-#error Define StAlloc and StFree together!
+#error Define S_Alloc and S_Free together!
 
 #endif
 
-#if !defined(StMemset) && !defined(StMemcpy)
+#if !defined(S_Memset) && !defined(S_Memcpy)
 
 #include <string.h>
-#define StMemset memset
-#define StMemcpy memcpy
+#define S_Memset memset
+#define S_Memcpy memcpy
 
-#elif !defined(StMemset) || !defined(StMemcpy)
+#elif !defined(S_Memset) || !defined(S_Memcpy)
 
-#error Define StMemset and StMemcpy together!
+#error Define S_Memset and S_Memcpy together!
 
 #endif
 
-#ifndef StLog
+#ifndef S_Log
 #include <stdio.h>
-#define StLog(msg, ...)                                                                            \
+#define S_Log(msg, ...)                                                                            \
     do {                                                                                           \
         fprintf(stdout, "[S_tr]: " msg "\n", ##__VA_ARGS__);                                       \
         fflush(stdout);                                                                            \
     } while (0)
 #endif
 
-#ifndef StDie
+#ifndef S_Die
 
 #include <stdlib.h> // `EXIT_FAILURE` & `exit`
 
-ST_NORETURN void StDie()
+ST_NORETURN void S_Die()
 #ifdef S_TRUCTURES_IMPLEMENTATION
 {
     exit(EXIT_FAILURE);
@@ -244,17 +254,17 @@ ST_NORETURN void StDie()
 
 #endif
 
-#define StOutOfJuice()                                                                             \
+#define S_OutOfJuice()                                                                             \
     do {                                                                                           \
-        StLog("Out of memory!!!");                                                                 \
-        StDie();                                                                                   \
+        S_Log("Out of memory!!!");                                                                 \
+        S_Die();                                                                                   \
     } while (0)
 
-#define StCheckedAlloc(var, size)                                                                  \
+#define S_CheckedAlloc(var, size)                                                                  \
     do {                                                                                           \
-        *(void**)&(var) = StAlloc((size));                                                         \
+        *(void**)&(var) = S_Alloc((size));                                                         \
         if (!(var))                                                                                \
-            StOutOfJuice();                                                                        \
+            S_OutOfJuice();                                                                        \
     } while (0)
 
 #endif
@@ -267,7 +277,7 @@ ST_NORETURN void StDie()
     }                                                                                              \
                                                                                                    \
     type TinyDictGet##suffix(const TinyMap* self, const char* key) {                               \
-        const void* data = TinyMapGet(self, StHashStr(key));                                       \
+        const void* data = TinyMapGet(self, S_HashStr(key));                                       \
         return data ? *(type*)data : 0;                                                            \
     }
 #else
@@ -287,46 +297,68 @@ ST_MAKE_MAP_GET(U64, uint64_t);
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
 
-#define TinyKey2Idx(key) ((size_t)((TINY_MAP_CAPACITY - 1) & StShuffleKey(key)))
+void S_FreeBox(S_Box* self) {
+    if (self && self->ptr) {
+        if (self->cleanup)
+            self->cleanup(self->ptr);
+        S_Free(self->ptr);
+        self->ptr = NULL;
+    }
+}
+
+void S_BoxPut(S_Box* self, const void* data, size_t size) {
+    if (self == NULL)
+        return;
+
+    if (data == NULL) {
+        S_FreeBox(self);
+        return;
+    }
+
+    if (self->size != size) {
+        S_FreeBox(self);
+        S_CheckedAlloc(self->ptr, size);
+        self->size = size;
+    }
+
+    S_Memcpy(self->ptr, data, size);
+}
+
+#define TinyKey2Idx(key) ((size_t)((TINY_MAP_CAPACITY - 1) & S_ShuffleKey(key)))
 #define TinyDGetHead(ptr) ((ptr) ? ((TinyDHead*)((char*)(ptr) - sizeof(TinyDHead))) : NULL)
 
-static const TinyHash StShuffleKey(const TinyHash hash) {
+static const TinyHash S_ShuffleKey(const TinyHash hash) {
     return hash ^ (hash >> (4 * sizeof(hash)));
 }
 
-TinyHash StStrKey(const char* s) {
+TinyHash S_StrKey(const char* s) {
     static char buf[sizeof(TinyHash)] = {0};
     if (!s)
         return 0;
     for (int i = 0; i < sizeof(buf); i++)
         if (!s[i]) {
-            StMemcpy(buf, s, i);
-            StMemset(buf + i, 0xFF, sizeof(buf) - i);
+            S_Memcpy(buf, s, i);
+            S_Memset(buf + i, 0xFF, sizeof(buf) - i);
             return *(TinyHash*)buf;
         }
     return *(TinyHash*)s;
 }
 
-// Thanks:
-// 1. <https://github.com/toggins/Klawiatura/blob/bf6d4a12877ee850ea2c52ae5e976fbf5f787aee/src/K_memory.c#L5>
-// 2. <https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function>
+TinyHash S_HashStr(const char* s) {
+    // Thanks:
+    // 1. <https://github.com/toggins/Klawiatura/blob/bf6d4a12877ee850ea2c52ae5e976fbf5f787aee/src/K_memory.c#L5>
+    // 2. <https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function>
 
-TinyHash StHashStr(const char* s) {
     TinyHash hash = 0xcbf29ce484222325;
+
     for (; s && *s; s++)
         hash ^= *(uint8_t*)s, hash *= 0x00000100000001b3;
+
     return hash;
 }
 
-static void StCleanupBucket(const TinyBucket* self) {
-    if (self->cleanup && self->data)
-        self->cleanup(self->data);
-}
-
-static void FreeTinyBucket(const TinyBucket* self) {
-    StCleanupBucket(self);
-    if (self->data)
-        StFree(self->data);
+static void FreeTinyBucket(TinyBucket* self) {
+    S_FreeBox(&self->data);
 }
 
 void FreeTinyMap(TinyMap* self) {
@@ -340,7 +372,7 @@ void FreeTinyMap(TinyMap* self) {
             FreeTinyD(self->buckets[i]);
         }
 
-        StFree((void*)self->buckets), self->buckets = NULL;
+        S_Free((void*)self->buckets), self->buckets = NULL;
     }
 
     self->length = 0;
@@ -352,13 +384,13 @@ size_t TinyMapLength(const TinyMap* self) {
 
 TinyBucket* TinyMapPut(TinyMap* self, TinyHash hash, const void* data, int size) {
     if (size < 1) { // TODO: bar behind a debug build check?
-        StLog("Requested bucket size 0; catching on fire");
+        S_Log("Requested bucket size 0; catching on fire");
         return NULL;
     }
 
     if (!self->buckets) {
-        StCheckedAlloc(self->buckets, sizeof(TinyBucket*) * TINY_MAP_CAPACITY);
-        StMemset((void*)self->buckets, 0, sizeof(TinyBucket*) * TINY_MAP_CAPACITY);
+        S_CheckedAlloc(self->buckets, sizeof(TinyBucket*) * TINY_MAP_CAPACITY);
+        S_Memset((void*)self->buckets, 0, sizeof(TinyBucket*) * TINY_MAP_CAPACITY);
     }
 
     const size_t idx = TinyKey2Idx(hash);
@@ -372,28 +404,14 @@ TinyBucket* TinyMapPut(TinyMap* self, TinyHash hash, const void* data, int size)
         TinyBucket* bucket = &self->buckets[idx][i];
 
         if (bucket->hash == hash) {
-            StCleanupBucket(bucket);
-
-            if (bucket->data_size != (size_t)size) {
-                if (bucket->data) {
-                    StFree(bucket->data);
-                    bucket->data = NULL;
-                }
-
-                StCheckedAlloc(bucket->data, size);
-                bucket->data_size = size;
-            }
-
-            StMemcpy(bucket->data, data, size);
-
+            S_BoxPut(&bucket->data, data, size);
             return bucket;
         }
     }
 
     TinyBucket bucket = {0};
-    bucket.hash = hash, bucket.data_size = size;
-    StCheckedAlloc(bucket.data, bucket.data_size);
-    StMemcpy(bucket.data, data, bucket.data_size);
+    bucket.hash = hash;
+    S_BoxPut(&bucket.data, data, size);
 
     self->buckets[idx] = (TinyBucket*)TinyDPush(self->buckets[idx], &bucket);
     self->length++;
@@ -416,7 +434,7 @@ TinyBucket* TinyMapFind(const TinyMap* self, TinyHash hash) {
 
 char* TinyMapGet(const TinyMap* self, TinyHash hash) {
     TinyBucket* const bucket = TinyMapFind(self, hash);
-    return bucket ? (char*)bucket->data : NULL;
+    return bucket ? bucket->data.ptr : NULL;
 }
 
 void TinyMapErase(TinyMap* self, TinyHash hash) {
@@ -453,7 +471,7 @@ bool TinyMapNext(TinyMapIterator* iter) {
         return false;
 
     iter->bucket = &guts->source->buckets[guts->hash_idx][guts->bucket_idx++];
-    iter->data = iter->bucket ? iter->bucket->data : NULL;
+    iter->data = iter->bucket ? iter->bucket->data.ptr : NULL;
     iter->key = iter->bucket ? iter->bucket->hash : 0;
 
     return true;
@@ -478,7 +496,7 @@ size_t TinyDElementSize(const void* self) {
 
 void* MakeTinyDPro(size_t capacity, size_t elt_size) {
     char* ptr = NULL;
-    StCheckedAlloc(ptr, sizeof(TinyDHead) + elt_size * capacity);
+    S_CheckedAlloc(ptr, sizeof(TinyDHead) + elt_size * capacity);
     ptr += sizeof(TinyDHead);
 
     TinyDGetHead(ptr)->length = 0, TinyDGetHead(ptr)->capacity = capacity;
@@ -489,7 +507,7 @@ void* MakeTinyDPro(size_t capacity, size_t elt_size) {
 
 void FreeTinyD(void* self) {
     if (self)
-        StFree(TinyDGetHead(self));
+        S_Free(TinyDGetHead(self));
 }
 
 void* TinyDGrow(void* _self) {
@@ -501,14 +519,14 @@ void* TinyDGrow(void* _self) {
     const size_t newcap = no_cap ? no_cap * TINY_D_GROWTH_FACTOR : TINY_D_INITIAL_CAPACITY;
 
     char* tmp = NULL;
-    StCheckedAlloc(tmp, elt_size * newcap + sizeof(TinyDHead));
+    S_CheckedAlloc(tmp, elt_size * newcap + sizeof(TinyDHead));
     tmp += sizeof(TinyDHead);
 
     TinyDGetHead(tmp)->capacity = newcap;
     TinyDGetHead(tmp)->length = length;
     TinyDGetHead(tmp)->elt_size = elt_size;
 
-    StMemcpy(tmp, self, no_cap * elt_size);
+    S_Memcpy(tmp, self, no_cap * elt_size);
     FreeTinyD(self), self = tmp;
 
     return self;
@@ -541,7 +559,7 @@ void* TinyDErase(void* _self, size_t idx) {
     const size_t size = TinyDElementSize(self);
 
     for (size_t i = idx; i < TinyDLength(self); i++)
-        StMemcpy(self + i * size, self + (i + 1) * size, size);
+        S_Memcpy(self + i * size, self + (i + 1) * size, size);
 
     return TinyDPop(self);
 }
@@ -558,7 +576,7 @@ void* TinyDPush(void* _self, const void* ref) {
     if (length == TinyDGetHead(self)->capacity)
         self = TinyDGrow(self);
 
-    StMemcpy(self + length * elt_size, ref, elt_size);
+    S_Memcpy(self + length * elt_size, ref, elt_size);
     TinyDGetHead(self)->length += 1;
 
     return self;
@@ -579,7 +597,7 @@ void TinyPqInsert(TinyPq* self, TinyPriority prio, const void* value, size_t siz
     }
 
     if (self->elt_size != size) {
-        StLog("TinyPq element size mismatch!!! Skipped insert");
+        S_Log("TinyPq element size mismatch!!! Skipped insert");
         return;
     }
 
@@ -587,8 +605,8 @@ void TinyPqInsert(TinyPq* self, TinyPriority prio, const void* value, size_t siz
         self->elts = TinyDPush(self->elts, value);
     } else if (prio > self->prio) {
         TinyPq* newlow = NULL;
-        StCheckedAlloc(newlow, sizeof(TinyPq));
-        StMemset(newlow, 0, sizeof(TinyPq));
+        S_CheckedAlloc(newlow, sizeof(TinyPq));
+        S_Memset(newlow, 0, sizeof(TinyPq));
 
         newlow->elts = self->elts, newlow->prio = self->prio;
         newlow->elt_size = self->elt_size, newlow->low = self->low;
@@ -598,8 +616,8 @@ void TinyPqInsert(TinyPq* self, TinyPriority prio, const void* value, size_t siz
         self->elts = TinyDPush(self->elts, value);
     } else {
         if (!self->low) {
-            StCheckedAlloc(self->low, sizeof(TinyPq));
-            StMemset(self->low, 0, sizeof(TinyPq));
+            S_CheckedAlloc(self->low, sizeof(TinyPq));
+            S_Memset(self->low, 0, sizeof(TinyPq));
         }
 
         TinyPqInsert(self->low, prio, value, size);
@@ -641,7 +659,7 @@ void FreeTinyPq(TinyPq* self) {
 
     if (self->low) {
         FreeTinyPq(self->low);
-        StFree(self->low); // yeah it's a linked list so what bitch.......
+        S_Free(self->low); // yeah it's a linked list so what bitch.......
         self->low = NULL;
     }
 

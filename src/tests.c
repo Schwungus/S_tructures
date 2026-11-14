@@ -14,8 +14,8 @@ static void counted_free(void* ptr) {
 }
 
 #define S_TRUCTURES_IMPLEMENTATION
-#define StAlloc counted_malloc
-#define StFree counted_free
+#define S_Alloc counted_malloc
+#define S_Free counted_free
 #include "S_tructures.h"
 
 #define run_test(fn) run_test_fr(#fn, fn)
@@ -54,20 +54,20 @@ static void map_simple_put_retrieve() {
     FreeTinyMap(&map);
 }
 
-static void map_string_key_and_nuke() {
+static void map_string_key_and_free() {
     TinyMap map = {0};
     int32_t data = 228;
 
-    TinyMapPut(&map, StStrKey("Key1"), &data, sizeof(data));
-    assert_eq(TinyMapGetI32(&map, StStrKey("Key1")), data);
+    TinyMapPut(&map, S_StrKey("Key1"), &data, sizeof(data));
+    assert_eq(TinyMapGetI32(&map, S_StrKey("Key1")), data);
 
-    TinyMapErase(&map, StStrKey("Key1"));
-    assert_eq(TinyMapGet(&map, StStrKey("Key1")), NULL);
+    TinyMapErase(&map, S_StrKey("Key1"));
+    assert_eq(TinyMapGet(&map, S_StrKey("Key1")), NULL);
 
     FreeTinyMap(&map);
 }
 
-static void map_string_hash_and_nuke() {
+static void map_string_hash_and_free() {
     TinyMap map = {0};
     int32_t data = 67;
 
@@ -78,6 +78,23 @@ static void map_string_hash_and_nuke() {
     assert_eq(TinyDictGet(&map, "SIX SEVEN"), NULL);
 
     FreeTinyMap(&map);
+}
+
+static bool clean = false;
+
+static void custom_cleanup() {
+    clean = true;
+}
+
+static void map_custom_cleanup() {
+    clean = false;
+
+    TinyMap map = {0};
+    TinyDictPut(&map, "SIX SEVEN", &(int){67}, sizeof(int))->data.cleanup = custom_cleanup;
+    assert_eq(clean, false);
+
+    FreeTinyMap(&map);
+    assert_eq(clean, true);
 }
 
 static void map_retains_entries() {
@@ -155,16 +172,16 @@ static void map_safe_to_reuse() {
 
 static void test_hashmaps() {
     run_test(map_simple_put_retrieve);
-    run_test(map_string_key_and_nuke);
-    run_test(map_string_hash_and_nuke);
+    run_test(map_string_key_and_free);
+    run_test(map_string_hash_and_free);
+    run_test(map_custom_cleanup);
     run_test(map_retains_entries);
     run_test(map_counts_length_correctly);
     run_test(map_overwrites_values_on_put);
     run_test(map_safe_to_reuse);
-    // TODO: test nukes...
 }
 
-static void d_append_doesnt_crash() {
+static void d_push_doesnt_crash() {
     int* da = MakeTinyD(int);
     const size_t count = TINY_D_INITIAL_CAPACITY * (TINY_D_GROWTH_FACTOR * 8);
 
@@ -241,7 +258,7 @@ static void d_erases() {
 }
 
 static void test_tinyDs() {
-    run_test(d_append_doesnt_crash);
+    run_test(d_push_doesnt_crash);
     run_test(d_pops_back);
     run_test(d_pops_front);
     run_test(d_erases);
