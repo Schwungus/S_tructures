@@ -120,10 +120,10 @@ TinyBucket* TinyMapFind(const TinyMap* self, TinyHash hash);
 /// An shorthand for `TinyMapFind` which accepts string keys and hashes them for you.
 #define TinyDictFind(self, hash) TinyMapFind((self), S_HashStr((hash)))
 
-/// Returns a pointer to an entry's data, if any. Spits out a `NULL` otherwise.
+/// Returns a pointer to an entry's value, if any. Spits out a `NULL` otherwise.
 ///
 /// If you need to check the entry's actual size, use the full-form `TinyMapFind`.
-char* TinyMapGet(const TinyMap* self, TinyHash hash);
+void* TinyMapGet(const TinyMap* self, TinyHash hash);
 
 /// An shorthand for `TinyMapGet` which accepts string keys and hashes them for you.
 #define TinyDictGet(self, hash) TinyMapGet((self), S_HashStr((hash)))
@@ -432,7 +432,7 @@ TinyBucket* TinyMapFind(const TinyMap* self, TinyHash hash) {
     return NULL;
 }
 
-char* TinyMapGet(const TinyMap* self, TinyHash hash) {
+void* TinyMapGet(const TinyMap* self, TinyHash hash) {
     TinyBucket* const bucket = TinyMapFind(self, hash);
     return bucket ? bucket->data.ptr : NULL;
 }
