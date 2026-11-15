@@ -8,9 +8,9 @@
 #endif
 
 #ifdef _MSC_VER
-#define ST_NORETURN __declspec(noreturn)
+#define S_NORETURN __declspec(noreturn)
 #else
-#define ST_NORETURN __attribute__((noreturn))
+#define S_NORETURN __attribute__((noreturn))
 #endif
 
 /// A piece of heap-allocated data with a size and a cleanup function.
@@ -243,7 +243,7 @@ void FreeTinyPq(TinyPq* self);
 
 #include <stdlib.h> // `EXIT_FAILURE` & `exit`
 
-ST_NORETURN void S_Die()
+S_NORETURN void S_Die()
 #ifdef S_TRUCTURES_IMPLEMENTATION
 {
     exit(EXIT_FAILURE);
@@ -270,7 +270,7 @@ ST_NORETURN void S_Die()
 #endif
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
-#define ST_MAKE_MAP_GET(suffix, type)                                                              \
+#define S_MAKE_MAP_GET(suffix, type)                                                               \
     type TinyMapGet##suffix(const TinyMap* self, TinyHash hash) {                                  \
         const void* data = TinyMapGet(self, hash);                                                 \
         return data ? *(type*)data : 0;                                                            \
@@ -281,19 +281,19 @@ ST_NORETURN void S_Die()
         return data ? *(type*)data : 0;                                                            \
     }
 #else
-#define ST_MAKE_MAP_GET(suffix, type)                                                              \
+#define S_MAKE_MAP_GET(suffix, type)                                                               \
     type TinyMapGet##suffix(const TinyMap*, TinyHash);                                             \
     type TinyDictGet##suffix(const TinyMap*, const char*);
 #endif
 
-ST_MAKE_MAP_GET(I16, int16_t);
-ST_MAKE_MAP_GET(U16, uint16_t);
-ST_MAKE_MAP_GET(I32, int32_t);
-ST_MAKE_MAP_GET(U32, uint32_t);
-ST_MAKE_MAP_GET(I64, int64_t);
-ST_MAKE_MAP_GET(U64, uint64_t);
+S_MAKE_MAP_GET(I16, int16_t);
+S_MAKE_MAP_GET(U16, uint16_t);
+S_MAKE_MAP_GET(I32, int32_t);
+S_MAKE_MAP_GET(U32, uint32_t);
+S_MAKE_MAP_GET(I64, int64_t);
+S_MAKE_MAP_GET(U64, uint64_t);
 
-#undef ST_MAKE_MAP_GET
+#undef S_MAKE_MAP_GET
 
 #ifdef S_TRUCTURES_IMPLEMENTATION
 
