@@ -59,7 +59,9 @@ The tiny-maps possess the following properties:
 
    void DrawEnemy(Enemy self) { /* ... */ }
 
-   TinyMap enemies = ...;
+   TinyMap enemies = {0};
+   // populate ^ here...
+
    TINY_MAP_FOREACH (enemies, it)
        DrawEnemy(*(Enemy*)it.data); // pointer-cast here
    ```
