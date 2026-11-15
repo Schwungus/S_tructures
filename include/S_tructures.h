@@ -13,7 +13,8 @@
 #define S_NORETURN __attribute__((noreturn))
 #endif
 
-/// A piece of heap-allocated data with a size and a cleanup function.
+/// A piece of heap-allocated data with a size and a cleanup function. The underlying memory is
+/// allocated with `S_Alloc` through `S_BoxPut()`, and freed with `S_Free` through `S_FreeBox()`.
 typedef struct {
     void *ptr, (*cleanup)(void*);
     size_t size;
@@ -254,15 +255,15 @@ S_NORETURN void S_Die()
 
 #endif
 
-#define S_OutOfJuice()                                                                             \
+#define S_OutOfJuice() /* inlined so that `S_Die` noreturn propagates to the caller */             \
     do {                                                                                           \
         S_Log("Out of memory!!!");                                                                 \
         S_Die();                                                                                   \
     } while (0)
 
-#define S_CheckedAlloc(var, size)                                                                  \
+#define S_CheckedAlloc(var, size) /* inlined so that `S_Die` noreturn propagates to the caller */  \
     do {                                                                                           \
-        *(void**)&(var) = S_Alloc((size));                                                         \
+        *(void**)&(var) = S_Alloc((size)); /* HACK: bypass "assignment to cast is not allowed" */  \
         if (!(var))                                                                                \
             S_OutOfJuice();                                                                        \
     } while (0)
