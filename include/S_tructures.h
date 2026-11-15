@@ -334,14 +334,17 @@ static const TinyHash S_ShuffleKey(const TinyHash hash) {
 
 TinyHash S_StrKey(const char* s) {
     static char buf[sizeof(TinyHash)] = {0};
+
     if (!s)
         return 0;
-    for (int i = 0; i < sizeof(buf); i++)
+
+    for (size_t i = 0; i < sizeof(buf); i++)
         if (!s[i]) {
             S_Memcpy(buf, s, i);
             S_Memset(buf + i, 0xFF, sizeof(buf) - i);
             return *(TinyHash*)buf;
         }
+
     return *(TinyHash*)s;
 }
 
@@ -367,8 +370,8 @@ void FreeTinyMap(TinyMap* self) {
         return;
 
     if (self->buckets) {
-        for (int i = 0; i < TINY_MAP_CAPACITY; i++) {
-            for (int j = 0; j < TinyDLength(self->buckets[i]); j++)
+        for (size_t i = 0; i < TINY_MAP_CAPACITY; i++) {
+            for (size_t j = 0; j < TinyDLength(self->buckets[i]); j++)
                 FreeTinyBucket(&self->buckets[i][j]);
             FreeTinyD(self->buckets[i]);
         }
